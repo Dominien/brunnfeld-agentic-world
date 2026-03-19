@@ -1,0 +1,10 @@
+node_modules/
+viewer/node_modules/
+viewer/dist/
+dist/
+.env
+*.log
+.DS_Store
+data/world_state.json
+data/logs/
+data/memory/

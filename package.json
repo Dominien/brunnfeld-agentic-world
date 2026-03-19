@@ -1,0 +1,27 @@
+{
+  "name": "brunnfeld",
+  "version": "1.0.0",
+  "description": "Medieval village economy simulation built on the Hauswelt social engine",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "tick": "tsx src/index.ts --tick-once",
+    "resume": "tsx src/index.ts --resume",
+    "reset": "tsx src/index.ts --reset",
+    "server": "tsx src/server.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "viewer:dev": "cd viewer && npm run dev",
+    "viewer:build": "cd viewer && npm run build"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.79.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
