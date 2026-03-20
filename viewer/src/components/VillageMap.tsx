@@ -91,10 +91,7 @@ export default function VillageMap() {
         });
       }
 
-      // Get live streaming set without causing re-renders
-      const streamingAgents = new Set(Object.keys(store.streaming) as AgentName[]);
-
-      renderVillage(ctx, world ?? null, cameraRef.current, selectedAgent, hoveredLoc, w, h, animationsRef.current, streamingAgents);
+      renderVillage(ctx, world ?? null, cameraRef.current, selectedAgent, hoveredLoc, w, h, animationsRef.current);
 
       const now = performance.now();
       for (const [agent, anim] of animationsRef.current) {
@@ -156,6 +153,11 @@ export default function VillageMap() {
     if (loc && world) {
       const agents = Object.entries(world.agent_locations)
         .filter(([, l]) => l === loc).map(([a]) => a as AgentName);
+      // When caravan is active, the Gipsy sprite at Merchant Camp IS Otto —
+      // select him regardless of where the frontend thinks he is
+      if (loc === "Merchant Camp" && world.active_events?.some(e => e.type === "caravan")) {
+        if (!agents.includes("otto")) agents.push("otto");
+      }
       if (agents.length > 0) {
         const idx = selectedAgent ? agents.indexOf(selectedAgent) : -1;
         selectAgent(agents[(idx + 1) % agents.length]!);

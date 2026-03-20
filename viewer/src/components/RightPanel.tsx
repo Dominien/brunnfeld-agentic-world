@@ -10,11 +10,12 @@ type TabId = "Agent" | "Market" | "Economy" | "Events";
 export default function RightPanel() {
   const [tab, setTab] = useState<TabId>("Market");
   const selectedAgent = useVillageStore((s) => s.selectedAgent);
+  const selectedAgentVersion = useVillageStore((s) => s.selectedAgentVersion);
 
-  // Auto-switch to Agent tab when an agent is selected
+  // Auto-switch to Agent tab on every selectAgent call (even same agent re-clicked)
   useEffect(() => {
     if (selectedAgent !== null) setTab("Agent");
-  }, [selectedAgent]);
+  }, [selectedAgent, selectedAgentVersion]);
 
   return (
     <div style={{

@@ -1,13 +1,5 @@
 import { useVillageStore, AGENT_DISPLAY } from "../store";
-import type { FeedEntry, AgentName } from "../types";
-
-const AGENT_COLORS: Record<AgentName, string> = {
-  hans: "#e8c87a", ida: "#f4b8d4", konrad: "#a8d48a", ulrich: "#c8a84a",
-  bertram: "#d4a870", gerda: "#d4d4a0", anselm: "#f0d890", volker: "#c84c4c",
-  wulf: "#a07040", liesel: "#d878a8", sybille: "#80c8d8", friedrich: "#80a850",
-  otto: "#a8a0c8", pater_markus: "#c8c8e8", dieter: "#909090", magda: "#e8b090",
-  bertha: "#c8b0a0", heinrich: "#d8c060", elke: "#e878b8", rupert: "#b0b0b0",
-};
+import type { FeedEntry } from "../types";
 
 const TYPE_COLOR: Record<FeedEntry["type"], string> = {
   speak: "#f0d870",

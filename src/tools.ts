@@ -7,6 +7,7 @@ import { queueMessage } from "./messages.js";
 import { resolveEat } from "./body.js";
 import { feedbackToAgent } from "./inventory.js";
 import { executeTrade, removeOrder } from "./marketplace.js";
+import { isLocationBlockedByEvent } from "./god-mode.js";
 
 export const ACTION_SCHEMA_PROMPT = `IMPORTANT: Your wallet and inventory shown above are exact. Do not claim to have coin or goods you have not received. Verbal agreements do not transfer goods — only post_order and buy_item create actual trades.
 
@@ -87,6 +88,10 @@ export function resolveAction(
       const valid = isValidLocation(targetLoc);
       if (!valid) {
         return { ...action, result: `[Can't do that] "${targetLoc}" is not a valid location. Available: ${[...LOCATIONS].join(", ")}`, visible: false };
+      }
+      const eventBlock = isLocationBlockedByEvent(targetLoc, state.active_events);
+      if (eventBlock) {
+        return { ...action, result: eventBlock, visible: false };
       }
       const hourIdx = getHourIndex(time);
       if (!isLocationOpen(targetLoc, hourIdx)) {

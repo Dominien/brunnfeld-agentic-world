@@ -14,8 +14,9 @@ export const AGENT_DISPLAY: Record<AgentName, string> = {
   gerda: "Gerda", anselm: "Anselm", volker: "Volker", wulf: "Wulf",
   liesel: "Liesel", sybille: "Sybille", friedrich: "Friedrich",
   otto: "Otto", pater_markus: "Pater Markus",
-  dieter: "Dieter", magda: "Magda", bertha: "Bertha", heinrich: "Heinrich",
+  dieter: "Dieter", magda: "Magda", bertha: "The Stranger", heinrich: "Heinrich",
   elke: "Elke", rupert: "Rupert",
+  player: "You",
 };
 
 let feedCounter = 0;
@@ -142,12 +143,17 @@ interface VillageStore {
   world: WorldState | null;
   feed: FeedEntry[];
   selectedAgent: AgentName | null;
+  selectedAgentVersion: number;
   connected: boolean;
   currentTick: number;
   latestEconomy: EconomySnapshot | null;
   streaming: Record<string, StreamEntry>;  // agent → live stream
   orderFeed: OrderFeedEntry[];
   priceFlashes: Record<string, PriceFlash>;
+  playerCreated: boolean;
+  playerName: string;
+  watchMode: boolean;
+  setWatchMode: (v: boolean) => void;
 
   // Tick navigation
   mode: ViewMode;
@@ -175,6 +181,7 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   world: null,
   feed: [],
   selectedAgent: null,
+  selectedAgentVersion: 0,
   connected: false,
   currentTick: 0,
   latestEconomy: null,
@@ -182,6 +189,10 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   orderFeed: [],
   priceFlashes: {},
   pendingAnimations: [],
+  playerCreated: false,
+  playerName: "",
+  watchMode: false,
+  setWatchMode: (watchMode) => set({ watchMode }),
 
   mode: "live",
   availableTicks: [],
@@ -190,7 +201,7 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   historyLoading: false,
 
   setWorld: (world) => set({ world }),
-  selectAgent: (selectedAgent) => set({ selectedAgent }),
+  selectAgent: (selectedAgent) => set((s) => ({ selectedAgent, selectedAgentVersion: s.selectedAgentVersion + 1 })),
   setConnected: (connected) => set({ connected }),
 
   setAvailableTicks: (availableTicks) => set({ availableTicks }),
@@ -256,7 +267,13 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
           price: trade.pricePerUnit,
         }));
       const lastSnap = e.state.economy_snapshots?.at(-1) ?? null;
-      set({ world: e.state, currentTick: e.state.current_tick, orderFeed: fills, latestEconomy: lastSnap });
+      set({
+        world: e.state,
+        currentTick: e.state.current_tick,
+        orderFeed: fills,
+        latestEconomy: lastSnap,
+        playerCreated: e.state.player_created ?? false,
+      });
       return;
     }
 
@@ -444,8 +461,12 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
       };
       set((s) => ({
         feed: [entry, ...s.feed].slice(0, 300),
-        world: s.world && e.active_events
-          ? { ...s.world, active_events: e.active_events }
+        world: s.world
+          ? {
+              ...s.world,
+              ...(e.active_events ? { active_events: e.active_events } : {}),
+              ...(e.agent_locations ? { agent_locations: e.agent_locations as Record<AgentName, string> } : {}),
+            }
           : s.world,
       }));
       return;
@@ -456,6 +477,83 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         if (!s.world?.active_events.some(ev => ev.type === e.eventType)) return s;
         return { world: { ...s.world!, active_events: s.world!.active_events.filter(ev => ev.type !== e.eventType) } };
       });
+      return;
+    }
+
+    if (e.type === "player:created") {
+      set((s) => ({
+        playerCreated: true,
+        playerName: e.name,
+        world: s.world ? {
+          ...s.world,
+          player_created: true,
+          agent_locations: { ...s.world.agent_locations, player: e.location },
+        } : s.world,
+      }));
+      return;
+    }
+
+    if (e.type === "player:update") {
+      const entry: FeedEntry = {
+        id: feedCounter++,
+        tick: get().currentTick,
+        agent: "player",
+        type: "do",
+        text: e.result || e.feedback || "You act.",
+      };
+      const world = get().world;
+      const fromLoc = world?.agent_locations["player"];
+      const isMove = !!(fromLoc && e.location && fromLoc !== e.location);
+      set((s) => {
+        const baseWorld = s.world ? {
+          ...s.world,
+          // always patch wallet
+          economics: {
+            ...s.world.economics,
+            player: s.world.economics.player
+              ? { ...s.world.economics.player, wallet: e.wallet }
+              : s.world.economics.player,
+          },
+          // only snap location if not animating
+          ...(!isMove && e.location ? {
+            agent_locations: { ...s.world.agent_locations, player: e.location },
+          } : {}),
+        } : s.world;
+        return {
+          feed: [entry, ...s.feed].slice(0, 300),
+          world: baseWorld,
+          ...(isMove ? {
+            pendingAnimations: [
+              ...s.pendingAnimations,
+              { agent: "player" as AgentName, fromLoc: fromLoc!, toLoc: e.location, startMs: performance.now(), durationMs: 900 },
+            ],
+          } : {}),
+        };
+      });
+      return;
+    }
+
+    if (e.type === "player:revived") {
+      const entry: FeedEntry = {
+        id: feedCounter++,
+        tick: get().currentTick,
+        agent: "player",
+        type: "system",
+        text: `You collapsed from hunger. Pater Markus nursed you back (-10 coin).`,
+      };
+      set((s) => ({
+        feed: [entry, ...s.feed].slice(0, 300),
+        world: s.world ? {
+          ...s.world,
+          agent_locations: { ...s.world.agent_locations, player: "Healer's Hut" },
+          economics: {
+            ...s.world.economics,
+            player: s.world.economics.player
+              ? { ...s.world.economics.player, wallet: e.newWallet }
+              : s.world.economics.player,
+          },
+        } : s.world,
+      }));
       return;
     }
   },

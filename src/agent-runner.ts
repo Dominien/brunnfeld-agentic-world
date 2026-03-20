@@ -330,6 +330,13 @@ export async function runAgentTurn(
   const actions = (response.actions || []).map(action => resolveAction(action, context));
   if (actions.length === 0) actions.push(resolveAction({ type: "wait" }, context));
 
+  // Emit move actions immediately so the map animates in real-time
+  for (const action of actions) {
+    if (action.type === "move_to" && action.visible && action.result) {
+      emitSSE("agent:action", { agent, name, actionType: action.type, text: action.text, result: action.result, location: action.location });
+    }
+  }
+
   const pendingMove = actions.find(a => a.type === "move_to")?.location;
   return { agent, actions, pendingMove };
 }

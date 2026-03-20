@@ -28,7 +28,7 @@ export const LOCATION_TILES: Record<string, { tx: number; ty: number }> = {
   "Farm 3":             { tx: 21, ty: 4  },
   "Forest":             { tx: 6,  ty: 1  },
   "Mine":               { tx: 28, ty: 1  },
-  "Merchant Camp":      { tx: 19, ty: 7  },
+  "Merchant Camp":      { tx: 16, ty: 5  },
 };
 
 export const ADJACENCY: [string, string][] = [

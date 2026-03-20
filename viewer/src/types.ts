@@ -5,7 +5,8 @@ export type AgentName =
   | "gerda" | "anselm" | "volker" | "wulf"
   | "liesel" | "sybille" | "friedrich"
   | "otto" | "pater_markus"
-  | "dieter" | "magda" | "bertha" | "heinrich" | "elke" | "rupert";
+  | "dieter" | "magda" | "bertha" | "heinrich" | "elke" | "rupert"
+  | "player";
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export type ItemType = string;
@@ -97,6 +98,8 @@ export interface WorldState {
   acquaintances: Record<AgentName, AgentName[]>;
   economy_snapshots: EconomySnapshot[];
   loans?: Loan[];
+  player_created: boolean;
+  pending_player_actions: unknown[];
 }
 
 export interface EconomySnapshot {
@@ -128,6 +131,9 @@ export type SSEEvent =
   | { type: "trade"; buyer: AgentName; seller: AgentName; item: ItemType; quantity: number; pricePerUnit: number; total: number; tick?: number }
   | { type: "production"; agent: AgentName; item: ItemType; qty: number }
   | { type: "economy"; snapshot: EconomySnapshot }
-  | { type: "event"; eventType: string; description: string; active_events?: ActiveEvent[] }
+  | { type: "event"; eventType: string; description: string; active_events?: ActiveEvent[]; agent_locations?: Record<string, string> }
   | { type: "event_expired"; eventType: string }
-  | { type: "order"; event: "posted" | "cancelled" | "expired"; orderId: string; agentId: AgentName; orderType?: "sell" | "buy"; item?: ItemType; quantity?: number; price?: number };
+  | { type: "order"; event: "posted" | "cancelled" | "expired"; orderId: string; agentId: AgentName; orderType?: "sell" | "buy"; item?: ItemType; quantity?: number; price?: number }
+  | { type: "player:created"; agent: "player"; name: string; location: string; wallet: number; skill: string }
+  | { type: "player:update"; agent: "player"; result: string; wallet: number; location: string; feedback?: string }
+  | { type: "player:revived"; agent: "player"; newWallet: number };

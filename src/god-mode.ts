@@ -265,6 +265,21 @@ export function triggerBanditThreat(state: WorldState, tick: number): ActiveEven
   return ev;
 }
 
+// ─── Location access blocking ─────────────────────────────────
+
+export function isLocationBlockedByEvent(
+  loc: string,
+  activeEvents: ActiveEvent[],
+): string | null {
+  if (loc === "Mine" && activeEvents.some(e => e.type === "mine_collapse")) {
+    return `[Can't go there] The mine has collapsed and is unsafe to enter. Wait until it is shored up.`;
+  }
+  if (loc === "Merchant Camp" && !activeEvents.some(e => e.type === "caravan")) {
+    return `[Can't go there] There is no merchant caravan at the camp right now.`;
+  }
+  return null;
+}
+
 // ─── Dispatch by event type ───────────────────────────────────
 
 export function triggerEvent(

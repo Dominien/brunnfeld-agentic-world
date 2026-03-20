@@ -6,7 +6,12 @@ import { eventBus, emitSSE } from "./events.js";
 import { readWorldState, writeWorldState } from "./memory.js";
 import { triggerEvent, runInterview } from "./god-mode.js";
 import { queueMessage } from "./messages.js";
-import type { AgentName } from "./types.js";
+import type { AgentName, AgentAction } from "./types.js";
+import { initPlayer } from "./player.js";
+import { resolveAction } from "./tools.js";
+import { resolveProduction } from "./production.js";
+import { resolveMarketplace } from "./marketplace-resolver.js";
+import { tickToTime } from "./time.js";
 
 export { emitSSE };
 
@@ -25,13 +30,14 @@ const MIME: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".webp": "image/webp",
+  ".gif": "image/gif",
 };
 
 // ─── HTTP Server ──────────────────────────────────────────────
 
 function cors(headers: Record<string, string>) {
   headers["Access-Control-Allow-Origin"] = "*";
-  headers["Access-Control-Allow-Methods"] = "GET, POST";
+  headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE";
   headers["Access-Control-Allow-Headers"] = "Content-Type";
 }
 
@@ -63,6 +69,7 @@ const server = createServer(async (req, res) => {
       headers["Cache-Control"] = "no-cache";
       headers["Connection"] = "keep-alive";
       res.writeHead(200, headers);
+      req.socket?.setNoDelay(true); // disable Nagle — flush each chunk immediately
 
       const send = (data: unknown) => res.write(`data: ${JSON.stringify(data)}\n\n`);
 
@@ -81,6 +88,9 @@ const server = createServer(async (req, res) => {
         "order:posted":     (e) => send({ type: "order", event: "posted",    ...(e as object) }),
         "order:cancelled":  (e) => send({ type: "order", event: "cancelled", ...(e as object) }),
         "order:expired":    (e) => send({ type: "order", event: "expired",   ...(e as object) }),
+        "player:created":   (e) => send({ type: "player:created", ...(e as object) }),
+        "player:update":    (e) => send({ type: "player:update",  ...(e as object) }),
+        "player:revived":   (e) => send({ type: "player:revived", ...(e as object) }),
       };
 
       for (const [evt, handler] of Object.entries(handlers)) {
@@ -186,6 +196,95 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // ─── Player: create character ──────────────────
+    if (path === "/api/player/create" && req.method === "POST") {
+      const body = await parseBody(req);
+      const name = (body["name"] as string) ?? "Traveller";
+      const skill = (body["skill"] as string) ?? "farmer";
+      const location = (body["location"] as string) ?? "Village Square";
+      const state = readWorldState();
+      if (state.player_created) {
+        headers["Content-Type"] = "application/json";
+        res.writeHead(409, headers);
+        res.end(JSON.stringify({ ok: false, error: "Player already created." }));
+        return;
+      }
+      initPlayer(state, name, skill, location);
+      writeWorldState(state);
+      headers["Content-Type"] = "application/json";
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ─── Player: queue action ──────────────────────
+    if (path === "/api/player/action" && req.method === "POST") {
+      const body = await parseBody(req);
+      const action = body["action"] as Record<string, unknown>;
+      if (!action?.type) {
+        headers["Content-Type"] = "application/json";
+        res.writeHead(400, headers);
+        res.end(JSON.stringify({ ok: false, error: "Missing action.type" }));
+        return;
+      }
+      const state = readWorldState();
+      if (!state.player_created) {
+        headers["Content-Type"] = "application/json";
+        res.writeHead(400, headers);
+        res.end(JSON.stringify({ ok: false, error: "Player not created yet." }));
+        return;
+      }
+      // All player actions execute immediately — no tick queue
+      const time = tickToTime(state.current_tick ?? 1);
+      const ctx = {
+        agent: "player" as const,
+        agentLocation: state.agent_locations["player"] ?? "Village Square",
+        state,
+        time,
+        movedThisTick: new Set<"player">(),
+      };
+      if (!state.action_feedback["player"]) state.action_feedback["player"] = [];
+      const prevFeedbackLen = state.action_feedback["player"].length;
+
+      const resolved = resolveAction(action as unknown as AgentAction, ctx);
+      const playerResult = { agent: "player" as const, actions: [resolved], pendingMove: undefined };
+
+      if (action.type === "produce") {
+        resolveProduction([playerResult], state, time);
+      } else if (action.type === "post_order" || action.type === "cancel_order") {
+        resolveMarketplace([playerResult], state, time);
+      }
+
+      // Collect feedback written during resolution
+      const newFeedback = state.action_feedback["player"].slice(prevFeedbackLen);
+      const resultText = newFeedback.length > 0
+        ? newFeedback.join(" ")
+        : resolved.result ?? "Done.";
+
+      writeWorldState(state);
+      emitSSE("player:update", {
+        agent: "player",
+        result: resultText,
+        location: state.agent_locations["player"] ?? "Village Square",
+        wallet: state.economics["player"]?.wallet ?? 0,
+      });
+      headers["Content-Type"] = "application/json";
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ ok: true, immediate: true }));
+      return;
+    }
+
+    // ─── Player: clear action queue ────────────────
+    if (path === "/api/player/action" && req.method === "DELETE") {
+      const state = readWorldState();
+      state.pending_player_actions = [];
+      writeWorldState(state);
+      headers["Content-Type"] = "application/json";
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
     // ─── God Mode: trigger event ───────────────────
     if (path === "/api/events/trigger" && req.method === "POST") {
       const body = await parseBody(req);
@@ -203,6 +302,7 @@ const server = createServer(async (req, res) => {
         eventType: ev.type,
         description: ev.description,
         active_events: state.active_events,
+        agent_locations: state.agent_locations,
       });
       headers["Content-Type"] = "application/json";
       res.writeHead(200, headers);
@@ -258,6 +358,8 @@ const server = createServer(async (req, res) => {
         ["/assets/items/tool/",      join(ROOT, "Items-Assets/Weapon & Tool")],
         ["/assets/items/misc/",      join(ROOT, "Items-Assets/Misc")],
         ["/assets/merchant/",        join(ROOT, "Asset_Pack/merchant")],
+["/assets/samurai_rival/",   join(ROOT, "Asset_Pack/samurai_rival/Sprites")],
+        ["/assets/terrain/decos/",   join(ROOT, "Asset_Pack/Terrain/Decorations")],
       ];
       for (const [prefix, dir] of assetMap) {
         if (path.startsWith(prefix)) {

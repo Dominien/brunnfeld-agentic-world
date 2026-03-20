@@ -39,6 +39,7 @@ const AGENT_PORTRAIT: Record<AgentName, number> = {
   otto: 13, pater_markus: 14,
   dieter: 15, magda: 16, bertha: 17, heinrich: 18,
   elke: 19, rupert: 20,
+  player: 0,
 };
 
 // ─── Agent bars ───────────────────────────────────────────────
@@ -196,6 +197,44 @@ function AgentList() {
   );
 }
 
+// ─── Animated merchant avatar ─────────────────────────────────
+
+function MerchantAvatar() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    imgRef.current = img;
+    img.onload = () => {
+      let frame = 0;
+      const tick = () => {
+        frame = (frame + 1) % 10;
+        ctx.clearRect(0, 0, 56, 56);
+        ctx.drawImage(img, frame * 80, 0, 80, 80, 0, 0, 56, 56);
+        rafRef.current = requestAnimationFrame(() => setTimeout(() => tick(), 110));
+      };
+      tick();
+    };
+    img.src = "/assets/merchant/Gipsy spritesheet.png";
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={56} height={56}
+      style={{ borderRadius: 4, border: "2px solid #c89030", flexShrink: 0, imageRendering: "pixelated" }}
+    />
+  );
+}
+
 // ─── Agent Detail Panel ───────────────────────────────────────
 
 export default function AgentPanel() {
@@ -266,38 +305,54 @@ export default function AgentPanel() {
   const loc = world.agent_locations[selectedAgent];
   const portraitNum = String(AGENT_PORTRAIT[selectedAgent] ?? 1).padStart(2, "0");
   const portraitUrl = `/assets/ui/Human Avatars/Avatars_${portraitNum}.png`;
+  const isCaravanActive = world.active_events.some(e => e.type === "caravan");
+  const isMerchant = selectedAgent === "otto" && isCaravanActive;
+  const caravanOrders = isMerchant
+    ? world.marketplace.orders.filter(o => o.agentId === "otto" && o.type === "sell")
+    : [];
 
   return (
     <div style={{
-      background: "rgba(12,8,3,0.95)", border: "1px solid #4a3010", borderRadius: 6,
+      background: "rgba(12,8,3,0.95)",
+      border: isMerchant ? "1px solid #c89030" : "1px solid #4a3010",
+      borderRadius: 6,
       height: "100%", display: "flex", flexDirection: "column", overflow: "hidden",
       fontFamily: "Georgia, serif",
     }}>
       {/* Header with portrait */}
       <div style={{
-        padding: "10px 12px", borderBottom: "1px solid #4a3010",
+        padding: "10px 12px", borderBottom: isMerchant ? "1px solid #c89030" : "1px solid #4a3010",
         display: "flex", gap: 10, alignItems: "flex-start",
-        background: "linear-gradient(to bottom, #1a1008, #100c04)",
+        background: isMerchant
+          ? "linear-gradient(to bottom, #2a1a00, #1a1000)"
+          : "linear-gradient(to bottom, #1a1008, #100c04)",
       }}>
-        <img
-          src={portraitUrl}
-          alt={AGENT_DISPLAY[selectedAgent]}
-          style={{ width: 56, height: 56, imageRendering: "pixelated", borderRadius: 4, border: "2px solid #6a4c1a" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-        />
+        {isMerchant ? (
+          <MerchantAvatar />
+        ) : (
+          <img
+            src={portraitUrl}
+            alt={AGENT_DISPLAY[selectedAgent]}
+            style={{ width: 56, height: 56, imageRendering: "pixelated", borderRadius: 4, border: "2px solid #6a4c1a" }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 16, fontWeight: "bold", color: "#f8e060" }}>
+          <div style={{ fontSize: 16, fontWeight: "bold", color: isMerchant ? "#f0c040" : "#f8e060" }}>
             {AGENT_DISPLAY[selectedAgent]}
+            {isMerchant && (
+              <span style={{
+                marginLeft: 8, fontSize: 9, fontWeight: "bold",
+                background: "rgba(180,120,10,0.35)", border: "1px solid #c89030",
+                color: "#f0c040", borderRadius: 3, padding: "1px 6px",
+                verticalAlign: "middle", letterSpacing: 1,
+              }}>CARAVAN</span>
+            )}
           </div>
           <div style={{ fontSize: 11, color: "#c09040", marginTop: 2 }}>
-            {SKILL_ICON[eco?.skill] ?? "👤"} {eco?.skill ?? "—"}
+            {isMerchant ? "🐪 Travelling Merchant" : `${SKILL_ICON[eco?.skill] ?? "👤"} ${eco?.skill ?? "—"}`}
           </div>
           <div style={{ fontSize: 10, color: "#806030", marginTop: 2 }}>📍 {loc}</div>
-          {eco?.hiredBy && (
-            <div style={{ fontSize: 10, color: "#80c8ff", marginTop: 2 }}>
-              📋 Hired by {AGENT_DISPLAY[eco.hiredBy]}
-            </div>
-          )}
         </div>
         <button
           onClick={() => selectAgent(null)}
@@ -307,6 +362,42 @@ export default function AgentPanel() {
 
       {/* Scrollable body */}
       <div style={{ flex: 1, overflowY: "auto", padding: "10px 12px" }}>
+
+        {/* Caravan wares for sale */}
+        {isMerchant && (
+          <>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 10, color: "#f0c040", fontWeight: "bold", letterSpacing: 1, marginBottom: 6, textTransform: "uppercase" }}>
+                🐪 Wares for Sale
+              </div>
+              {caravanOrders.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {caravanOrders.map(order => {
+                    const iconUrl = getItemIconUrl(order.item);
+                    return (
+                      <div key={order.id} style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        background: "rgba(80,50,5,0.35)", border: "1px solid #8a5010",
+                        borderRadius: 4, padding: "5px 8px",
+                      }}>
+                        {iconUrl
+                          ? <img src={iconUrl} alt={order.item} width={20} height={20} style={{ imageRendering: "pixelated" }} />
+                          : <span style={{ fontSize: 14 }}>📦</span>
+                        }
+                        <span style={{ flex: 1, fontSize: 11, color: "#e8d890" }}>{order.item}</span>
+                        <span style={{ fontSize: 10, color: "#a0a0a0" }}>×{order.quantity}</span>
+                        <span style={{ fontSize: 11, color: "#f0c040", fontWeight: "bold" }}>{order.price}c</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ fontSize: 10, color: "#4a3020" }}>All goods sold out</div>
+              )}
+            </div>
+            <div style={{ height: 1, background: "#6a4010", margin: "8px 0" }} />
+          </>
+        )}
 
         {/* Wallet */}
         <div style={{ marginBottom: 12 }}>

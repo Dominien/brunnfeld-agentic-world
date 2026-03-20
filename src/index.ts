@@ -31,6 +31,7 @@ function initWorldState(): WorldState {
       otto: "Elder's House", pater_markus: "Church",
       dieter: "Cottage 8", magda: "Cottage 8", bertha: "Cottage 9",
       heinrich: "Cottage 1", elke: "Seamstress Cottage", rupert: "Cottage 3",
+      player: "Village Square",
     },
 
     body: {
@@ -54,6 +55,7 @@ function initWorldState(): WorldState {
       heinrich:     { hunger: 1, energy: 9, sleep_quality: "good" },
       elke:         { hunger: 1, energy: 8, sleep_quality: "fair" },
       rupert:       { hunger: 2, energy: 9, sleep_quality: "good" },
+      player:       { hunger: 0, energy: 8, sleep_quality: "good" },
     },
 
     economics: {
@@ -73,10 +75,11 @@ function initWorldState(): WorldState {
       pater_markus: { wallet: 25, inventory: { items: [] }, tool: null, skill: "none", homeLocation: "Church", workLocation: "Church", workSchedule: { open: 6, close: 21 } },
       dieter:       { wallet: 18, inventory: { items: [{ type: "iron_ore", quantity: 2 }, { type: "coal", quantity: 1 }] }, tool: { type: "iron_tools", durability: 65 }, skill: "miner", homeLocation: "Cottage 8", workLocation: "Mine", workSchedule: { open: 7, close: 17 } },
       magda:        { wallet: 10, inventory: { items: [{ type: "bread", quantity: 2 }] }, tool: null, skill: "none", homeLocation: "Cottage 8", workLocation: "Village Square", workSchedule: { open: 6, close: 21 } },
-      bertha:       { wallet: 8,  inventory: { items: [{ type: "vegetables", quantity: 2 }] }, tool: null, skill: "none", homeLocation: "Cottage 9", workLocation: "Village Square", workSchedule: { open: 6, close: 21 } },
+      bertha:       { wallet: 55, inventory: { items: [{ type: "bread", quantity: 4 }, { type: "iron_tools", quantity: 2 }] }, tool: null, skill: "merchant", homeLocation: "Cottage 9", workLocation: "Village Square", workSchedule: { open: 6, close: 21 } },
       heinrich:     { wallet: 25, inventory: { items: [{ type: "wheat", quantity: 6 }, { type: "eggs", quantity: 3 }] }, tool: { type: "iron_tools", durability: 55 }, skill: "farmer", homeLocation: "Cottage 1", workLocation: "Farm 1", workSchedule: { open: 6, close: 16 } },
       elke:         { wallet: 30, inventory: { items: [{ type: "cloth", quantity: 3 }] }, tool: null, skill: "seamstress", homeLocation: "Seamstress Cottage", workLocation: "Seamstress Cottage", workSchedule: { open: 7, close: 16 } },
       rupert:       { wallet: 20, inventory: { items: [{ type: "iron_ore", quantity: 3 }, { type: "coal", quantity: 2 }] }, tool: { type: "iron_tools", durability: 80 }, skill: "miner", homeLocation: "Cottage 3", workLocation: "Mine", workSchedule: { open: 7, close: 17 } },
+      player:       { wallet: 0, inventory: { items: [] }, tool: null, skill: "none", homeLocation: "Village Square", workLocation: "Village Square", workSchedule: { open: 6, close: 21 } },
     },
 
     marketplace: {
@@ -108,6 +111,7 @@ function initWorldState(): WorldState {
       liesel: [], sybille: [], friedrich: [],
       otto: [], pater_markus: [],
       dieter: [], magda: [], bertha: [], heinrich: [], elke: [], rupert: [],
+      player: [],
     },
 
     objects: [],
@@ -117,6 +121,7 @@ function initWorldState(): WorldState {
       liesel: [], sybille: [], friedrich: [],
       otto: [], pater_markus: [],
       dieter: [], magda: [], bertha: [], heinrich: [], elke: [], rupert: [],
+      player: [],
     },
 
     acquaintances: {
@@ -140,12 +145,15 @@ function initWorldState(): WorldState {
       heinrich: ["hans"],    // housemates
       elke: [],
       rupert: ["dieter", "friedrich"],
+      player: [],
     },
 
     economy_snapshots: [],
     total_tax_collected: 0,
     production_log: [],
     loans: [],
+    player_created: false,
+    pending_player_actions: [],
   };
 }
 

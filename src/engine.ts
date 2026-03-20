@@ -22,6 +22,7 @@ import { resolveBarter } from "./trade-scanner.js";
 import { takeEconomySnapshot, getEconomySummary } from "./economy-tracker.js";
 import { applyWinterHeating, getSeasonDescription } from "./seasons.js";
 import { isLocationOpen } from "./village-map.js";
+import { processPlayerTurn, updatePlayerBody, checkPlayerRevive } from "./player.js";
 
 // ─── Agent descriptions for unknown acquaintances ────────────
 
@@ -31,8 +32,9 @@ const AGENT_DESCRIPTIONS: Record<AgentName, string> = {
   anselm: "the baker", volker: "the blacksmith", wulf: "the carpenter",
   liesel: "the tavern keeper", sybille: "the village healer", friedrich: "a woodcutter",
   otto: "the village elder", pater_markus: "the village priest",
-  dieter: "a miner", magda: "a villager", bertha: "a villager",
+  dieter: "a miner", magda: "a villager", bertha: "a mysterious trader who arrived recently with unusual knowledge of markets",
   heinrich: "a farmer", elke: "the seamstress", rupert: "a miner",
+  player: "a newcomer to the village",
 };
 
 function describeAgent(agent: AgentName, observer: AgentName, state: WorldState): string {
@@ -188,14 +190,22 @@ export async function runTick(tick: number): Promise<void> {
   for (const agent of AGENT_NAMES) {
     updateBodyState(state.body[agent], time);
   }
+  updatePlayerBody(state, time);
 
   // ── 4. CLEAR LAST TICK'S FEEDBACK ───────────────────────────
   // (keep it around for one tick so agents read it, then clear before next LLM call)
   const feedbackSnapshot = { ...state.action_feedback };
   for (const agent of AGENT_NAMES) state.action_feedback[agent] = [];
+  if (state.player_created) state.action_feedback["player"] = [];
 
   // ── 4b. GOD MODE EVENTS ──────────────────────────────────────
   tickGodModeEvents(state, time); // expire events, apply bandit theft
+
+  // ── 4c. PLAYER TURN ──────────────────────────────────────────
+  let playerTurnResult: import("./types.js").AgentTurnResult | null = null;
+  if (state.player_created && state.pending_player_actions.length > 0) {
+    playerTurnResult = processPlayerTurn(state, time);
+  }
 
   // ── 5. BUILD PERCEPTIONS ─────────────────────────────────────
   const activeAgents = AGENT_NAMES.filter(a => !isAgentDead(state.body[a]));
@@ -313,6 +323,8 @@ export async function runTick(tick: number): Promise<void> {
     allResults.push(...locResults);
     tickLocations[location] = { agents: group, rounds: locationRounds };
   }
+  // Include player result so production/marketplace resolvers process it
+  if (playerTurnResult) allResults.push(playerTurnResult);
 
   // ── 7. SOCIAL RESOLUTION ────────────────────────────────────
   // Apply movements
@@ -344,6 +356,24 @@ export async function runTick(tick: number): Promise<void> {
     updateRelationships(result.agent, result.actions, others);
   }
 
+  // ── 9b. PLAYER POST-TICK ─────────────────────────────────────
+  checkPlayerRevive(state, tick);
+  if (state.player_created && playerTurnResult) {
+    const playerAction = playerTurnResult.actions[0];
+    const feedback = state.action_feedback["player"] ?? [];
+    // For produce/order actions, the real result is in feedback
+    const resultText = (playerAction?.result && !playerAction.result.startsWith("(pending"))
+      ? playerAction.result
+      : feedback.join("; ");
+    emitSSE("player:update", {
+      agent: "player",
+      result: resultText,
+      wallet: state.economics["player"]?.wallet ?? 0,
+      location: state.agent_locations["player"] ?? "",
+      feedback: feedback.length > 0 ? feedback.join("\n") : undefined,
+    });
+  }
+
   // ── 10. ECONOMY SNAPSHOT ────────────────────────────────────
   takeEconomySnapshot(state, time);
 
@@ -373,6 +403,7 @@ export async function runTick(tick: number): Promise<void> {
     const loc = state.agent_locations[result.agent];
     for (const action of result.actions) {
       if (!action.visible || !action.result) continue;
+      if (action.type === "move_to") continue; // already emitted live in agent-runner
       emitSSE("agent:action", {
         agent: result.agent,
         actionType: action.type,

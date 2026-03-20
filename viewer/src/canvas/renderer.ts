@@ -1,5 +1,5 @@
 import { loadSprite, drawSprite } from "./sprites";
-import { LOCATION_TILES, LOCATION_BUILDINGS, ADJACENCY, TILE_SIZE, WORLD_W, WORLD_H } from "./map";
+import { LOCATION_TILES, LOCATION_BUILDINGS, TILE_SIZE, WORLD_W, WORLD_H } from "./map";
 import type { AgentName, WorldState } from "../types";
 import { AGENT_DISPLAY } from "../store";
 
@@ -19,6 +19,9 @@ const SPRITES = {
   monkIdle:    "/assets/units/Monk/Idle.png",
   warriorIdle: "/assets/units/Warrior/Warrior_Idle.png",
   merchantIdle: "/assets/merchant/Gipsy spritesheet.png",
+  // Samurai rival
+  samuraiIdle: "/assets/samurai_rival/IDLE.png",
+  samuraiRun:  "/assets/samurai_rival/RUN.png",
 };
 
 // ─── Agent → sprite mapping ───────────────────────────────────────────────
@@ -29,8 +32,9 @@ const AGENT_SPRITE: Record<AgentName, keyof typeof SPRITES> = {
   volker: "pawnHammer", wulf: "pawnHammer", liesel: "pawnIdle",
   sybille: "pawnIdle", friedrich: "pawnWood",
   otto: "warriorIdle", pater_markus: "monkIdle",
-  dieter: "pawnPickaxe", magda: "pawnIdle", bertha: "pawnIdle",
+  dieter: "pawnPickaxe", magda: "pawnIdle", bertha: "samuraiIdle",
   heinrich: "pawnAxe", elke: "pawnIdle", rupert: "pawnPickaxe",
+  player: "pawnIdle",  // fallback; player uses GIF rendering
 };
 
 // ─── Agent color tints (CSS hue-rotate-like effect via colored overlays) ─
@@ -39,7 +43,8 @@ const AGENT_COLORS: Record<AgentName, string> = {
   bertram: "#d4a870", gerda: "#d4d4a0", anselm: "#f0d890", volker: "#c84c4c",
   wulf: "#a07040", liesel: "#d878a8", sybille: "#80c8d8", friedrich: "#80a850",
   otto: "#a8a0c8", pater_markus: "#c8c8e8", dieter: "#909090", magda: "#e8b090",
-  bertha: "#c8b0a0", heinrich: "#d8c060", elke: "#e878b8", rupert: "#b0b0b0",
+  bertha: "#e03030", heinrich: "#d8c060", elke: "#e878b8", rupert: "#b0b0b0",
+  player: "#ffd700",
 };
 
 // ─── Particles (floating text) ────────────────────────────────────────────
@@ -98,6 +103,99 @@ function loadBuilding(url: string): HTMLImageElement | null {
   return null;
 }
 
+// ─── Terrain decoration images ────────────────────────────────
+
+const DECO_ROCKS = [
+  "/assets/terrain/decos/Rocks/Rock1.png",
+  "/assets/terrain/decos/Rocks/Rock2.png",
+  "/assets/terrain/decos/Rocks/Rock3.png",
+  "/assets/terrain/decos/Rocks/Rock4.png",
+];
+const DECO_BUSHES = [
+  "/assets/terrain/decos/Bushes/Bushe1.png",
+  "/assets/terrain/decos/Bushes/Bushe2.png",
+  "/assets/terrain/decos/Bushes/Bushe3.png",
+  "/assets/terrain/decos/Bushes/Bushe4.png",
+];
+
+// Rocks: 64x64, draw at ~28x28. Bushes: 1024x128 sheet, draw first 128x128 frame at ~34x20.
+const decoImages: Map<string, HTMLImageElement | "loading"> = new Map();
+function loadDeco(url: string): HTMLImageElement | null {
+  const hit = decoImages.get(url);
+  if (hit && hit !== "loading") return hit;
+  if (hit === "loading") return null;
+  decoImages.set(url, "loading");
+  const img = new Image();
+  img.onload = () => decoImages.set(url, img);
+  img.src = url;
+  return null;
+}
+
+// Preload all decos immediately
+[...DECO_ROCKS, ...DECO_BUSHES].forEach(loadDeco);
+
+// Seeded positions for stable decoration placement
+function seededDecos(
+  count: number,
+  areaX: number, areaY: number, areaW: number, areaH: number,
+  seed: number,
+): { x: number; y: number; variant: number }[] {
+  const out = [];
+  let s = seed;
+  for (let i = 0; i < count; i++) {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    const x = areaX + (s % areaW);
+    s = (s * 1664525 + 1013904223) >>> 0;
+    const y = areaY + (s % areaH);
+    s = (s * 1664525 + 1013904223) >>> 0;
+    const variant = s % 4;
+    out.push({ x, y, variant });
+  }
+  return out;
+}
+
+function drawDecorations(ctx: CanvasRenderingContext2D): void {
+  const T = TILE_SIZE;
+
+  // Rocks near Mine (top-right corner)
+  const mineRocks = seededDecos(8, 24 * T, 0, 6 * T, 3 * T, 0xABCD);
+  for (const { x, y, variant } of mineRocks) {
+    const img = loadDeco(DECO_ROCKS[variant % 4]!);
+    if (img) ctx.drawImage(img, x - 14, y - 14, 28, 28);
+  }
+
+  // Rocks along bottom river bank
+  const riverRocks = seededDecos(10, 2 * T, 22 * T, 28 * T, 2 * T, 0x1234);
+  for (const { x, y, variant } of riverRocks) {
+    const img = loadDeco(DECO_ROCKS[variant % 4]!);
+    if (img) ctx.drawImage(img, x - 12, y - 12, 24, 24);
+  }
+
+  // Bushes along farm edges (top strip)
+  const farmBushes = seededDecos(12, 0, 5 * T, 30 * T, T, 0xF00D);
+  for (const { x, y, variant } of farmBushes) {
+    const img = loadDeco(DECO_BUSHES[variant % 4]!);
+    if (img) {
+      // Draw first 128x128 frame of the 1024x128 spritesheet
+      ctx.drawImage(img, 0, 0, 128, 128, x - 17, y - 12, 34, 20);
+    }
+  }
+
+  // Bushes in Forest area
+  const forestBushes = seededDecos(10, 2 * T, 0, 8 * T, 4 * T, 0xBEEF);
+  for (const { x, y, variant } of forestBushes) {
+    const img = loadDeco(DECO_BUSHES[variant % 4]!);
+    if (img) ctx.drawImage(img, 0, 0, 128, 128, x - 14, y - 10, 28, 17);
+  }
+
+  // Rocks scattered between cottages
+  const cottageRocks = seededDecos(6, 2 * T, 11 * T, 20 * T, 3 * T, 0x5E1D);
+  for (const { x, y, variant } of cottageRocks) {
+    const img = loadDeco(DECO_ROCKS[variant % 4]!);
+    if (img) ctx.drawImage(img, x - 10, y - 10, 20, 20);
+  }
+}
+
 function darknessAlpha(hour: number): number {
   // hour 6–21: 6=0.5, 10=0, 17=0, 20=0.4, 21=0.5
   if (hour <= 6) return 0.6;
@@ -131,7 +229,6 @@ export function renderVillage(
   canvasW: number,
   canvasH: number,
   animations: Map<AgentName, ActiveAnimation> = new Map(),
-  streamingAgents: Set<AgentName> = new Set(),
 ): void {
   frameIndex++;
 
@@ -147,12 +244,15 @@ export function renderVillage(
   // ── LAYER 2: Buildings ───────────────────────────────────────
   drawBuildings(ctx, hoveredLocation);
 
+  // ── LAYER 2a: Terrain decorations ────────────────────────────
+  drawDecorations(ctx);
+
   // ── LAYER 2b: Event overlays ─────────────────────────────────
-  if (world) drawEventOverlays(ctx, world);
+  if (world) drawEventOverlays(ctx, world, selectedAgent);
 
   // ── LAYER 3: Agents ──────────────────────────────────────────
   if (world) {
-    drawAgents(ctx, world, selectedAgent, animations, streamingAgents);
+    drawAgents(ctx, world, selectedAgent, animations);
   }
 
   // ── LAYER 4: Particles ───────────────────────────────────────
@@ -334,27 +434,11 @@ function drawAgentSprite(
   isSelected: boolean,
   isMoving: boolean,
   world: WorldState,
-  isStreaming: boolean = false,
 ): void {
   const spriteKey = isMoving ? "pawnRun" : AGENT_SPRITE[agent];
   const spriteUrl = SPRITES[spriteKey];
   const sheet = spriteKey ? loadSprite(spriteUrl, SPRITE_FRAME_W, SPRITE_FRAME_H) : null;
   const animFrame = Math.floor(frameIndex / (isMoving ? 4 : 8));
-
-  // Gold thinking pulse for actively-streaming agents
-  if (isStreaming) {
-    const pulse = Math.sin(frameIndex * 0.18) * 0.5 + 0.5;
-    ctx.strokeStyle = `rgba(255,220,40,${0.25 + pulse * 0.65})`;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(cx, cy, SPRITE_DISPLAY / 2 + 6, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = `rgba(255,200,0,${0.1 + pulse * 0.25})`;
-    ctx.lineWidth = 9;
-    ctx.beginPath();
-    ctx.arc(cx, cy, SPRITE_DISPLAY / 2 + 10, 0, Math.PI * 2);
-    ctx.stroke();
-  }
 
   if (isSelected) {
     ctx.strokeStyle = "#ffd700";
@@ -397,18 +481,96 @@ function drawAgentSprite(
   }
 }
 
+const SAMURAI_FRAME_W = 96;
+const SAMURAI_FRAME_H = 96;
+const SAMURAI_DISPLAY = 44;
+
+function drawRivalSprite(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  isSelected: boolean,
+  isMoving: boolean,
+): void {
+  const spriteUrl = isMoving ? SPRITES.samuraiRun : SPRITES.samuraiIdle;
+  const sheet = loadSprite(spriteUrl, SAMURAI_FRAME_W, SAMURAI_FRAME_H);
+  const animFrame = Math.floor(frameIndex / (isMoving ? 3 : 7));
+
+  // Selection / idle ring (crimson)
+  ctx.strokeStyle = isSelected ? "#ff4040" : "rgba(200,30,30,0.55)";
+  ctx.lineWidth = isSelected ? 3 : 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, SAMURAI_DISPLAY / 2 + 3, 0, Math.PI * 2);
+  ctx.stroke();
+
+  if (sheet) {
+    drawSprite(ctx, sheet, animFrame, cx - SAMURAI_DISPLAY / 2, cy - SAMURAI_DISPLAY / 2, SAMURAI_DISPLAY, SAMURAI_DISPLAY);
+  } else {
+    ctx.fillStyle = "#e03030";
+    ctx.beginPath();
+    ctx.arc(cx, cy, SAMURAI_DISPLAY / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // "The Stranger" label in crimson
+  ctx.font = "bold 8px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillText("Stranger", cx + 1, cy - SAMURAI_DISPLAY / 2 - 2);
+  ctx.fillStyle = isSelected ? "#ff6060" : "#e05050";
+  ctx.fillText("Stranger", cx, cy - SAMURAI_DISPLAY / 2 - 3);
+}
+
+function drawPlayerSprite(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  anim: ActiveAnimation | null,
+  isMoving: boolean,
+  isSelected: boolean,
+): void {
+  // Use samurai sheet but invert colors so player looks distinct from The Stranger
+  const spriteUrl = isMoving ? SPRITES.samuraiRun : SPRITES.samuraiIdle;
+  const sheet = loadSprite(spriteUrl, SAMURAI_FRAME_W, SAMURAI_FRAME_H);
+  const animFrame = Math.floor(frameIndex / (isMoving ? 3 : 7));
+
+  // Gold ring
+  ctx.strokeStyle = "#ffd700";
+  ctx.lineWidth = isSelected ? 4 : 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, SAMURAI_DISPLAY / 2 + 3, 0, Math.PI * 2);
+  ctx.stroke();
+
+  if (sheet) {
+    ctx.save();
+    ctx.filter = "invert(1)";
+    drawSprite(ctx, sheet, animFrame, cx - SAMURAI_DISPLAY / 2, cy - SAMURAI_DISPLAY / 2, SAMURAI_DISPLAY, SAMURAI_DISPLAY);
+    ctx.restore();
+  }
+
+  // "You" label
+  ctx.font = "bold 11px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillText("You", cx + 1, cy - SAMURAI_DISPLAY / 2 - 4);
+  ctx.fillStyle = "#ffd700";
+  ctx.fillText("You", cx, cy - SAMURAI_DISPLAY / 2 - 5);
+}
+
 function drawAgents(
   ctx: CanvasRenderingContext2D,
   world: WorldState,
   selectedAgent: AgentName | null,
   animations: Map<AgentName, ActiveAnimation>,
-  streamingAgents: Set<AgentName> = new Set(),
 ): void {
   const now = performance.now();
+  // When caravan is active, Otto is rendered by the event overlay as the Gipsy merchant sprite
+  const caravanActive = world.active_events.some(e => e.type === "caravan");
 
   const byLoc: Record<string, AgentName[]> = {};
   for (const [agent, loc] of Object.entries(world.agent_locations)) {
     if (animations.has(agent as AgentName)) continue;
+    if (caravanActive && agent === "otto" && loc === "Merchant Camp") continue;
     if (!byLoc[loc]) byLoc[loc] = [];
     byLoc[loc]!.push(agent as AgentName);
   }
@@ -426,16 +588,37 @@ function drawAgents(
       const oy = (row - 0.5) * 12;
       const cx = basePx + TILE_SIZE / 2 + ox;
       const cy = basePy + TILE_SIZE / 2 + oy;
-      drawAgentSprite(ctx, agent, cx, cy, agent === selectedAgent, false, world, streamingAgents.has(agent));
+
+      if (agent === "player") {
+        drawPlayerSprite(ctx, cx, cy, null, false, agent === selectedAgent);
+        return;
+      }
+      if (agent === "bertha") {
+        drawRivalSprite(ctx, cx, cy, agent === selectedAgent, false);
+        return;
+      }
+
+      drawAgentSprite(ctx, agent, cx, cy, agent === selectedAgent, false, world);
     });
   }
 
   for (const [agent, anim] of animations) {
+    if (caravanActive && agent === "otto" && anim.toLoc === "Merchant Camp") continue;
     const t = Math.min(1, (now - anim.startMs) / anim.durationMs);
     const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
     const cx = anim.fromX + (anim.toX - anim.fromX) * ease;
     const cy = anim.fromY + (anim.toY - anim.fromY) * ease;
-    drawAgentSprite(ctx, agent, cx, cy, agent === selectedAgent, t < 1, world, streamingAgents.has(agent));
+
+    if (agent === "player") {
+      drawPlayerSprite(ctx, cx, cy, anim, t < 1, agent === selectedAgent);
+      continue;
+    }
+    if (agent === "bertha") {
+      drawRivalSprite(ctx, cx, cy, agent === selectedAgent, t < 1);
+      continue;
+    }
+
+    drawAgentSprite(ctx, agent, cx, cy, agent === selectedAgent, t < 1, world);
   }
 }
 
@@ -461,7 +644,11 @@ function drawParticles(ctx: CanvasRenderingContext2D): void {
 
 // ─── God Mode event overlays ──────────────────────────────────────────────
 
-function drawEventOverlays(ctx: CanvasRenderingContext2D, world: WorldState): void {
+function drawEventOverlays(
+  ctx: CanvasRenderingContext2D,
+  world: WorldState,
+  selectedAgent: AgentName | null,
+): void {
   const events = world.active_events;
   if (events.length === 0) return;
 
@@ -545,19 +732,32 @@ function drawEventOverlays(ctx: CanvasRenderingContext2D, world: WorldState): vo
         const animFrame = Math.floor(frameIndex / 8) % 10; // row 0: 10 idle frames with chest
         const cx = px + TILE_SIZE / 2;
         const cy = py + TILE_SIZE / 2 + 4;
+
+        // Selection ring (drawn behind sprite)
+        if (selectedAgent === "otto") {
+          ctx.strokeStyle = "#ffd700";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, MERCHANT_DISPLAY / 2 + 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
         if (sheet) {
           drawSprite(ctx, sheet, animFrame, cx - MERCHANT_DISPLAY / 2, cy - MERCHANT_DISPLAY / 2, MERCHANT_DISPLAY, MERCHANT_DISPLAY);
         } else {
-          // Fallback: golden circle
           ctx.fillStyle = "#d4a020";
           ctx.beginPath();
           ctx.arc(cx, cy, 14, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // "Merchant" label below sprite
+        // "Otto" label above sprite + "Merchant" below
         ctx.font = "bold 8px monospace";
         ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillText("Otto", cx + 1, cy - MERCHANT_DISPLAY / 2 - 2);
+        ctx.fillStyle = selectedAgent === "otto" ? "#ffd700" : "#ffe8c0";
+        ctx.fillText("Otto", cx, cy - MERCHANT_DISPLAY / 2 - 3);
         ctx.fillStyle = "rgba(0,0,0,0.55)";
         ctx.fillText("Merchant", cx + 1, cy + MERCHANT_DISPLAY / 2 + 11);
         ctx.fillStyle = "#f0c040";

@@ -243,11 +243,13 @@ Non-adjacent moves route through Village Square (2 ticks).
 | **Elke** | seamstress | Seamstress Cottage | 30c | Cloth production |
 | **Ida** | — | Cottage 2 | 12c | No production skill |
 | **Magda** | — | Cottage 8 | 10c | No production skill |
-| **Bertha** | — | Cottage 9 | 8c | Poorest agent |
+| **The Stranger** *(Bertha)* | merchant | Cottage 9 | 55c | Time-traveller arbitrageur — buys cheap, sells high |
 | **Otto** | elder | Elder's House | 120c | Tax collector (10% every Monday) |
 | **Pater Markus** | priest | Church | 25c | No economic role |
 
 **Pre-existing acquaintances** (day 1): Hans↔Heinrich, Gerda↔Anselm, Volker↔Wulf, Friedrich↔Rupert, Dieter↔Rupert, Dieter↔Magda, Liesel↔Otto, Otto↔Pater Markus
+
+**The Stranger** is a special agent — unlike the other 19 villagers she has no home skill. Her profile gives her deep knowledge of market inefficiencies, supply chain timing, and the leverage a cash-rich outsider has when seasonal scarcity hits. She starts with 55c and tools in her pack. The engine treats her identically to any other agent; her advantage is purely informational.
 
 ### Supply Chains
 
@@ -655,11 +657,13 @@ brunnfeld/
 │   ├── god-mode.ts            # God Mode events · agent interview · whisper
 │   ├── messages.ts            # send_message queuing
 │   ├── doors.ts               # lock / unlock / knock resolution
+│   ├── player.ts              # Player init · immediate action resolution · soft death revive
 │   └── tools-degradation.ts   # Tool wear tracking
 ├── viewer/                    # Web viewer (Vite + React + Canvas)
 │   └── src/
-│       ├── canvas/            # Pixel art renderer: map · agents · animations
-│       ├── components/        # AgentPanel · MarketPanel · EconomyPanel · GodModePanel · Feed
+│       ├── canvas/            # Pixel art renderer: map · agents · decorations · animations
+│       ├── components/        # AgentPanel · MarketPanel · EconomyPanel · GodModePanel
+│       │                      # CharacterCreation · PlayerHUD · Feed
 │       └── hooks/             # SSE connection · state management (Zustand)
 ├── data/
 │   ├── world_state.json       # Full simulation state (mutated every tick)
@@ -686,8 +690,111 @@ brunnfeld/
 | `POST /api/events/trigger` | POST | Inject a god mode event `{ eventType }` |
 | `POST /api/interview/:agent` | POST | Stream in-character agent response `{ question }` |
 | `POST /api/whisper/:agent` | POST | Queue a message to an agent `{ message }` |
+| `POST /api/player/create` | POST | Create player character `{ name, skill, location }` |
+| `POST /api/player/action` | POST | Execute a player action immediately `{ action }` |
+| `DELETE /api/player/action` | DELETE | Clear any pending player actions |
 
-**SSE event types**: `tick`, `action`, `trade`, `production`, `economy`, `order`, `thinking`, `stream`, `event`, `event_expired`
+**Player action types** (all execute immediately, no tick wait):
+
+```bash
+# Move
+curl -X POST localhost:3333/api/player/action \
+  -H 'Content-Type: application/json' \
+  -d '{"action":{"type":"move_to","location":"Village Square"}}'
+
+# Produce
+curl -X POST localhost:3333/api/player/action \
+  -d '{"action":{"type":"produce","item":"iron_ore"}}'
+
+# Buy from marketplace
+curl -X POST localhost:3333/api/player/action \
+  -d '{"action":{"type":"buy_item","item":"bread","max_price":9999}}'
+
+# Post a sell order
+curl -X POST localhost:3333/api/player/action \
+  -d '{"action":{"type":"post_order","side":"sell","item":"iron_ore","quantity":3,"price":4}}'
+
+# Eat
+curl -X POST localhost:3333/api/player/action \
+  -d '{"action":{"type":"eat","item":"bread","quantity":1}}'
+```
+
+**SSE event types**: `tick`, `action`, `trade`, `production`, `economy`, `order`, `thinking`, `stream`, `event`, `event_expired`, `player:created`, `player:update`, `player:revived`
+
+---
+
+## Playing as a Villager
+
+You can join the simulation as a playable character and compete against the 20 NPC agents to earn more coin.
+
+### Character Creation
+
+When you open the viewer before creating a character, a full-screen creation overlay appears. Pick a name, a skill, and a starting location — or click **Just Watch** to observe without playing.
+
+| Skill | Starting Coin | Work Location | Produces |
+|-------|:---:|---|---|
+| Farmer | 20c | Farm 1 | wheat, vegetables, eggs |
+| Baker | 20c | Bakery | bread (needs flour) |
+| Miner | 20c | Mine | iron_ore, coal |
+| Carpenter | 20c | Carpenter Shop | furniture (needs timber) |
+| Blacksmith | 20c | Forge | iron_tools (needs iron_ore + coal) |
+| Merchant | 30c | Village Square | nothing — trade only |
+
+### The Player HUD
+
+Once created, a 200px sidebar appears on the left with:
+
+```
+┌──────────────────┐
+│ Klaus            │  name + skill + location
+│ Miner · Mine     │
+│ 20c              │  wallet
+│ ████░ Hunger     │  5-bar indicators
+│ ████████░ Energy │
+├──────────────────┤
+│ ACT NOW          │
+│ [Move To ▼]  Go  │  instant teleport + walk animation
+│ [Produce ▼] Do   │  craft immediately
+│ [Buy Item ▼] Buy │  buy from marketplace now
+│ [Post Order]     │  list item for sale
+│ [Eat (bread)]    │  eat from inventory
+│ [Rest]           │
+├──────────────────┤
+│ INVENTORY        │
+│ iron_ore ×3      │
+├──────────────────┤
+│ LEADERBOARD      │
+│ 1. Hans   142c   │
+│ 2. Ida    118c   │
+│ 3. You     23c ← │
+└──────────────────┘
+```
+
+### Immediate Actions
+
+All player actions execute **instantly** when you click — no waiting for the next tick:
+
+- **Move** → location updates on the map with a walk animation
+- **Produce** → crafted immediately using your current location + skill
+- **Buy** → marketplace trade executes right now
+- **Post Order** → sell listing appears on the order board immediately
+- **Eat / Rest** → hunger and energy update instantly
+
+The engine still runs NPC ticks concurrently. Player actions are resolved against live world state the moment the button is clicked, then broadcast to the viewer via SSE.
+
+### Soft Death
+
+If your hunger reaches 5 for 3 consecutive ticks, Pater Markus revives you at the Healer's Hut at a cost of **−10 coin**.
+
+---
+
+## The Stranger
+
+One of the 20 NPC agents — **The Stranger** — is not a typical villager. She's a time-traveller merchant with deep knowledge of medieval supply chains, seasonal pricing, and arbitrage timing. She starts with 55c, a stock of bread and iron tools, and a profile that instructs her to identify and exploit price inefficiencies rather than produce goods herself.
+
+On the map she appears with a **crimson ring** and the label *"Stranger"*. In the viewer's agent list she has no home skill — just a wallet and a strategy.
+
+If you're playing, she's your rival. She's competing for the same orders and the same scarce goods, and she started with more coin than you did.
 
 ---
 
@@ -728,6 +835,20 @@ Type a rumor into the **Whisper** field while an agent is selected. They receive
 → Bertha receives: "A villager whispered: bread prices will triple by winter"
 → Watch her next-tick behavior
 ```
+
+---
+
+## The Viewer
+
+The web viewer at `http://localhost:5173` (dev) or `http://localhost:3333` (production build) renders the simulation in real time:
+
+- **Canvas map** — 22 locations, pixel-art buildings, agent sprites with walk animations
+- **Terrain decorations** — rocks and bushes placed at stable seeded positions throughout the map (mine area, riverbanks, forest, farms, between cottages)
+- **Day/night cycle** — darkness overlay from 6pm, lifted at dawn
+- **Agent sprites** — pawn/warrior/monk sprites per role; The Stranger uses an animated samurai sheet with a crimson ring; your character uses an inverted-color version with a gold ring
+- **Right panel** — Agent detail, marketplace, economy charts, God Mode events
+- **Activity drawer** — collapsible scene chronicle at the bottom
+- **Economy strip** — always-visible wealth bar across the bottom
 
 ---
 

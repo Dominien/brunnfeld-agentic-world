@@ -18,11 +18,45 @@ export function readAgentProfile(agent: AgentName): string {
 export function readWorldState(): WorldState {
   const state = JSON.parse(readFileSync(join(DATA_DIR, "world_state.json"), "utf-8")) as WorldState;
   state.loans ??= [];
+  state.player_created ??= false;
+  state.pending_player_actions ??= [];
   return state;
 }
 
 export function writeWorldState(state: WorldState): void {
-  writeFileSync(join(DATA_DIR, "world_state.json"), JSON.stringify(state, null, 2));
+  const path = join(DATA_DIR, "world_state.json");
+  // Guard against clobbering player state created or queued mid-tick.
+  // The engine holds an in-memory snapshot from tick-start; if the server wrote
+  // player_created=true or new pending actions while the tick was running,
+  // we must not overwrite them.
+  try {
+    const onDisk = JSON.parse(readFileSync(path, "utf-8")) as Partial<WorldState>;
+    const p = "player" as const;
+    if (onDisk.player_created && !state.player_created) {
+      // Player was created mid-tick — bring their full setup forward
+      state.player_created = true;
+      state.pending_player_actions = onDisk.pending_player_actions ?? [];
+      if (onDisk.agent_locations?.[p]) state.agent_locations[p] = onDisk.agent_locations[p]!;
+      if (onDisk.body?.[p])           state.body[p]           = onDisk.body[p]!;
+      if (onDisk.economics?.[p])      state.economics[p]      = onDisk.economics[p]!;
+      if (onDisk.acquaintances?.[p])  state.acquaintances[p]  = onDisk.acquaintances[p]!;
+      if (onDisk.message_queue?.[p])  state.message_queue[p]  = onDisk.message_queue[p]!;
+      if (onDisk.action_feedback?.[p]) state.action_feedback[p] = onDisk.action_feedback[p]!;
+    } else if (state.player_created) {
+      // Player already existed at tick start; merge any new actions queued
+      // by the server while the tick was running (those beyond what engine saw).
+      const diskPending = onDisk.pending_player_actions ?? [];
+      const enginePending = state.pending_player_actions ?? [];
+      // Items the server appended beyond the engine's starting snapshot
+      if (diskPending.length > enginePending.length) {
+        state.pending_player_actions = [
+          ...enginePending,
+          ...diskPending.slice(enginePending.length),
+        ];
+      }
+    }
+  } catch { /* first write or parse error — proceed as-is */ }
+  writeFileSync(path, JSON.stringify(state, null, 2));
 }
 
 export function writeTickLog(tick: number, log: object): void {
