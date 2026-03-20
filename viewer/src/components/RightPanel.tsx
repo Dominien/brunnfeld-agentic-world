@@ -3,8 +3,9 @@ import { useVillageStore } from "../store";
 import AgentPanel from "./AgentPanel";
 import MarketPanel from "./MarketPanel";
 import StockMarketPanel from "./StockMarketPanel";
+import GodModePanel from "./GodModePanel";
 
-type TabId = "Agent" | "Market" | "Economy";
+type TabId = "Agent" | "Market" | "Economy" | "Events";
 
 export default function RightPanel() {
   const [tab, setTab] = useState<TabId>("Market");
@@ -24,7 +25,7 @@ export default function RightPanel() {
     }}>
       {/* Tab bar */}
       <div style={{ display: "flex", borderBottom: "1px solid #3a2810", flexShrink: 0 }}>
-        {(["Agent", "Market", "Economy"] as TabId[]).map((t) => (
+        {(["Agent", "Market", "Economy", "Events"] as TabId[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -50,6 +51,7 @@ export default function RightPanel() {
         {tab === "Agent" && <AgentPanel />}
         {tab === "Market" && <MarketPanel />}
         {tab === "Economy" && <StockMarketPanel />}
+        {tab === "Events" && <GodModePanel />}
       </div>
     </div>
   );

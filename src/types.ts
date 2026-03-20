@@ -167,7 +167,7 @@ export interface EconomySnapshot {
 
 // ─── World Events ──────────────────────────────────────────
 
-export type EventType = "drought" | "plague" | "caravan" | "bandit_threat" | "mine_collapse" | "tax_day";
+export type EventType = "drought" | "plague" | "caravan" | "bandit_threat" | "mine_collapse" | "tax_day" | "double_harvest" | "plague_rumor";
 
 export interface ActiveEvent {
   type: EventType;

@@ -16,6 +16,7 @@ import { updateBodyState, applyDawnAutoEat, checkStarvation, isAgentDead } from 
 import { checkSpoilage, feedbackToAgent } from "./inventory.js";
 import { degradeTools, autoEquipTools } from "./tools-degradation.js";
 import { resolveProduction } from "./production.js";
+import { tickGodModeEvents } from "./god-mode.js";
 import { resolveMarketplace } from "./marketplace-resolver.js";
 import { resolveBarter } from "./trade-scanner.js";
 import { takeEconomySnapshot, getEconomySummary } from "./economy-tracker.js";
@@ -192,6 +193,9 @@ export async function runTick(tick: number): Promise<void> {
   // (keep it around for one tick so agents read it, then clear before next LLM call)
   const feedbackSnapshot = { ...state.action_feedback };
   for (const agent of AGENT_NAMES) state.action_feedback[agent] = [];
+
+  // ── 4b. GOD MODE EVENTS ──────────────────────────────────────
+  tickGodModeEvents(state, time); // expire events, apply bandit theft
 
   // ── 5. BUILD PERCEPTIONS ─────────────────────────────────────
   const activeAgents = AGENT_NAMES.filter(a => !isAgentDead(state.body[a]));

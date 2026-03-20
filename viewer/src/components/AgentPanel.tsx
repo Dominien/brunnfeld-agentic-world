@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useVillageStore, AGENT_DISPLAY } from "../store";
 import type { AgentName, BodyState, Loan } from "../types";
 import { getItemIconUrl } from "../canvas/sprites";
@@ -201,6 +202,55 @@ export default function AgentPanel() {
   const world         = useVillageStore((s) => s.world);
   const selectAgent   = useVillageStore((s) => s.selectAgent);
 
+  const [question, setQuestion]       = useState("");
+  const [answer, setAnswer]           = useState("");
+  const [interviewing, setInterviewing] = useState(false);
+  const [whisper, setWhisper]         = useState("");
+  const [whispering, setWhispering]   = useState(false);
+
+  useEffect(() => {
+    setQuestion("");
+    setAnswer("");
+    setWhisper("");
+  }, [selectedAgent]);
+
+  async function askAgent() {
+    if (!selectedAgent || !question.trim()) return;
+    setInterviewing(true);
+    setAnswer("");
+    try {
+      const res = await fetch(`/api/interview/${selectedAgent}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const reader = res.body!.getReader();
+      const dec = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        setAnswer(prev => prev + dec.decode(value));
+      }
+    } finally {
+      setInterviewing(false);
+    }
+  }
+
+  async function whisperRumor() {
+    if (!selectedAgent || !whisper.trim()) return;
+    setWhispering(true);
+    try {
+      await fetch(`/api/whisper/${selectedAgent}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: whisper }),
+      });
+      setWhisper("");
+    } finally {
+      setWhispering(false);
+    }
+  }
+
   if (!selectedAgent || !world) {
     return <AgentList />;
   }
@@ -388,6 +438,91 @@ export default function AgentPanel() {
             ) : (
               <span style={{ fontSize: 10, color: "#4a3020" }}>No acquaintances yet</span>
             )}
+          </div>
+        </div>
+
+        {/* ─── Interview ─────────────────────────────── */}
+        <div style={{ height: 1, background: "#3a2810", margin: "10px 0" }} />
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, color: "#c8a060", fontWeight: "bold", letterSpacing: 1, marginBottom: 6, textTransform: "uppercase" }}>
+            Interview {AGENT_DISPLAY[selectedAgent].split(" ")[0]}
+          </div>
+          <textarea
+            value={question}
+            onChange={e => setQuestion(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askAgent(); } }}
+            placeholder="Ask them something…"
+            rows={3}
+            style={{
+              width: "100%", boxSizing: "border-box",
+              background: "rgba(20,12,4,0.9)", border: "1px solid #5a3c10",
+              borderRadius: 4, color: "#d4c080", fontSize: 10,
+              fontFamily: "Georgia, serif", padding: "6px 8px",
+              resize: "vertical", outline: "none",
+            }}
+          />
+          <button
+            onClick={askAgent}
+            disabled={interviewing || !question.trim()}
+            style={{
+              marginTop: 4, width: "100%",
+              background: interviewing ? "rgba(40,25,5,0.8)" : "rgba(80,50,5,0.8)",
+              border: "1px solid #8a5010", borderRadius: 4,
+              color: "#f0c040", fontSize: 10, fontFamily: "Georgia, serif",
+              padding: "5px", cursor: interviewing ? "default" : "pointer",
+              opacity: !question.trim() ? 0.5 : 1,
+            }}
+          >
+            {interviewing ? "…" : "Ask"}
+          </button>
+          {answer && (
+            <div style={{
+              marginTop: 6, maxHeight: 140, overflowY: "auto",
+              background: "rgba(30,18,5,0.9)", border: "1px solid #5a3c10",
+              borderRadius: 4, padding: "6px 8px",
+              fontSize: 10, color: "#e8d8a0", lineHeight: 1.5,
+              fontStyle: "italic",
+            }}>
+              {answer}
+            </div>
+          )}
+        </div>
+
+        {/* ─── Whisper ───────────────────────────────── */}
+        <div style={{ height: 1, background: "#3a2810", margin: "8px 0" }} />
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 10, color: "#c8a060", fontWeight: "bold", letterSpacing: 1, marginBottom: 2, textTransform: "uppercase" }}>
+            Whisper a Rumor
+          </div>
+          <div style={{ fontSize: 9, color: "#6a4820", fontStyle: "italic", marginBottom: 6 }}>
+            They'll hear it next tick
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            <input
+              type="text"
+              value={whisper}
+              onChange={e => setWhisper(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") whisperRumor(); }}
+              placeholder="Spread a rumor…"
+              style={{
+                flex: 1, background: "rgba(20,12,4,0.9)", border: "1px solid #5a3c10",
+                borderRadius: 4, color: "#d4c080", fontSize: 10,
+                fontFamily: "Georgia, serif", padding: "5px 8px", outline: "none",
+              }}
+            />
+            <button
+              onClick={whisperRumor}
+              disabled={whispering || !whisper.trim()}
+              style={{
+                background: "rgba(40,25,5,0.8)", border: "1px solid #8a5010",
+                borderRadius: 4, color: "#f0c040", fontSize: 10,
+                fontFamily: "Georgia, serif", padding: "5px 10px",
+                cursor: whispering ? "default" : "pointer",
+                opacity: !whisper.trim() ? 0.5 : 1,
+              }}
+            >
+              {whispering ? "…" : "Whisper"}
+            </button>
           </div>
         </div>
 

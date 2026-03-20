@@ -1,5 +1,7 @@
 # Brunnfeld
 
+![Brunnfeld](cover.png)
+
 **A medieval village economy that runs itself.**
 
 20 LLM agents live in a 22-location village. They receive no behavioral instructions, no trading strategies, no economic goals. Each agent gets a short background — name, skill, home, starting goods — and a structured world that enforces physics: hunger, tool degradation, seasonal yields, locked doors, expiring orders, spoiling food, debt.

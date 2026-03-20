@@ -1,8 +1,12 @@
 import "dotenv/config";
-import { createServer } from "http";
+import { createServer, IncomingMessage } from "http";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, extname } from "path";
 import { eventBus, emitSSE } from "./events.js";
+import { readWorldState, writeWorldState } from "./memory.js";
+import { triggerEvent, runInterview } from "./god-mode.js";
+import { queueMessage } from "./messages.js";
+import type { AgentName } from "./types.js";
 
 export { emitSSE };
 
@@ -27,11 +31,19 @@ const MIME: Record<string, string> = {
 
 function cors(headers: Record<string, string>) {
   headers["Access-Control-Allow-Origin"] = "*";
-  headers["Access-Control-Allow-Methods"] = "GET";
+  headers["Access-Control-Allow-Methods"] = "GET, POST";
   headers["Access-Control-Allow-Headers"] = "Content-Type";
 }
 
-const server = createServer((req, res) => {
+function parseBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve) => {
+    let body = "";
+    req.on("data", (c) => body += c.toString());
+    req.on("end", () => { try { resolve(JSON.parse(body)); } catch { resolve({}); } });
+  });
+}
+
+const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   const path = url.pathname;
   const headers: Record<string, string> = {};
@@ -64,6 +76,7 @@ const server = createServer((req, res) => {
         "production:done":  (e) => send({ type: "production", ...(e as object) }),
         "economy:snapshot": (e) => send({ type: "economy",    ...(e as object) }),
         "event:triggered":  (e) => send({ type: "event",      ...(e as object) }),
+        "event:expired":    (e) => send({ type: "event_expired", ...(e as object) }),
         "tick:start":       (e) => send({ type: "tick",       ...(e as object) }),
         "order:posted":     (e) => send({ type: "order", event: "posted",    ...(e as object) }),
         "order:cancelled":  (e) => send({ type: "order", event: "cancelled", ...(e as object) }),
@@ -170,6 +183,64 @@ const server = createServer((req, res) => {
       headers["Content-Type"] = "application/json";
       res.writeHead(200, headers);
       res.end(readFileSync(filePath));
+      return;
+    }
+
+    // ─── God Mode: trigger event ───────────────────
+    if (path === "/api/events/trigger" && req.method === "POST") {
+      const body = await parseBody(req);
+      const eventType = body["eventType"] as string;
+      const state = readWorldState();
+      const ev = triggerEvent(eventType, state, state.current_tick);
+      if (!ev) {
+        headers["Content-Type"] = "application/json";
+        res.writeHead(400, headers);
+        res.end(JSON.stringify({ ok: false, error: `Unknown event type: ${eventType}` }));
+        return;
+      }
+      writeWorldState(state);
+      emitSSE("event:triggered", {
+        eventType: ev.type,
+        description: ev.description,
+        active_events: state.active_events,
+      });
+      headers["Content-Type"] = "application/json";
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ ok: true, event: ev }));
+      return;
+    }
+
+    // ─── God Mode: interview agent ─────────────────
+    if (path.startsWith("/api/interview/") && req.method === "POST") {
+      const agentId = path.replace("/api/interview/", "") as AgentName;
+      const body = await parseBody(req);
+      const question = (body["question"] as string) ?? "";
+      const state = readWorldState();
+      headers["Content-Type"] = "text/plain; charset=utf-8";
+      headers["Transfer-Encoding"] = "chunked";
+      res.writeHead(200, headers);
+      try {
+        await runInterview(agentId, question, state, (chunk) => res.write(chunk));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("Interview error:", msg);
+        res.write(`\n[Interview failed: ${msg}]`);
+      }
+      res.end();
+      return;
+    }
+
+    // ─── God Mode: whisper to agent ────────────────
+    if (path.startsWith("/api/whisper/") && req.method === "POST") {
+      const agentId = path.replace("/api/whisper/", "") as AgentName;
+      const body = await parseBody(req);
+      const message = (body["message"] as string) ?? "";
+      const state = readWorldState();
+      queueMessage(state, "otto", agentId, `A villager whispered: "${message}"`, state.current_tick);
+      writeWorldState(state);
+      headers["Content-Type"] = "application/json";
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ ok: true }));
       return;
     }
 

@@ -442,7 +442,21 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         type: "system",
         text: `⚡ ${e.description}`,
       };
-      set({ feed: [entry, ...feed].slice(0, 300) });
+      set((s) => ({
+        feed: [entry, ...s.feed].slice(0, 300),
+        world: s.world && (e as { active_events?: unknown[] }).active_events
+          ? { ...s.world, active_events: (e as { active_events: import("./types").ActiveEvent[] }).active_events! }
+          : s.world,
+      }));
+      return;
+    }
+
+    if (e.type === "event_expired") {
+      set((s) => ({
+        world: s.world
+          ? { ...s.world, active_events: s.world.active_events.filter(ev => ev.type !== (e as { eventType: string }).eventType) }
+          : s.world,
+      }));
     }
   },
 }));

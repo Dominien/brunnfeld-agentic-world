@@ -128,5 +128,6 @@ export type SSEEvent =
   | { type: "trade"; buyer: AgentName; seller: AgentName; item: ItemType; quantity: number; pricePerUnit: number; total: number; tick?: number }
   | { type: "production"; agent: AgentName; item: ItemType; qty: number }
   | { type: "economy"; snapshot: EconomySnapshot }
-  | { type: "event"; eventType: string; description: string }
+  | { type: "event"; eventType: string; description: string; active_events?: ActiveEvent[] }
+  | { type: "event_expired"; eventType: string }
   | { type: "order"; event: "posted" | "cancelled" | "expired"; orderId: string; agentId: AgentName; orderType?: "sell" | "buy"; item?: ItemType; quantity?: number; price?: number };

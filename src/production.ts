@@ -2,6 +2,7 @@ import type { AgentName, AgentTurnResult, ItemType, Skill, WorldState, SimTime }
 import { AGENT_NAMES } from "./types.js";
 import { getInventoryQty, removeFromInventory, addToInventory, feedbackToAgent } from "./inventory.js";
 import { getSeasonMultiplier } from "./seasons.js";
+import { getEventProductionMultiplier } from "./god-mode.js";
 
 export interface Recipe {
   skill: Skill;
@@ -114,9 +115,13 @@ export function resolveProduction(
       const outputItem = Object.keys(recipe.output)[0] as ItemType;
       const baseQty = Object.values(recipe.output)[0]!;
       const multiplier = getSeasonMultiplier(outputItem, state.season);
+      const eventMultiplier = getEventProductionMultiplier(outputItem, state.active_events);
 
-      if (multiplier === 0) {
-        feedbackToAgent(agent, state, `[Can't do that] You can't produce ${outputItem} in ${state.season}.`);
+      if (multiplier === 0 || eventMultiplier === 0) {
+        const reason = eventMultiplier === 0
+          ? `[Can't produce] ${outputItem} production is blocked by a village event.`
+          : `[Can't do that] You can't produce ${outputItem} in ${state.season}.`;
+        feedbackToAgent(agent, state, reason);
         // Restore consumed inputs
         for (const [inputItem, qty] of Object.entries(recipe.inputs)) {
           addToInventory(eco.inventory, inputItem as ItemType, qty);
@@ -130,7 +135,7 @@ export function resolveProduction(
       const laborBonus = laborerWorking ? 1.5 : 1.0;
       const outputTarget = isLaborer ? eco.hiredBy! : agent;
 
-      const qty = Math.floor(baseQty * multiplier * laborBonus);
+      const qty = Math.floor(baseQty * multiplier * laborBonus * eventMultiplier);
       addToInventory(state.economics[outputTarget].inventory, outputItem, qty, time.tick);
       producedThisTick.add(agent);
 
