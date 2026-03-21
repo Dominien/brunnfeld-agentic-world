@@ -32,8 +32,7 @@ const AGENT_DESCRIPTIONS: Record<AgentName, string> = {
   anselm: "the baker", volker: "the blacksmith", wulf: "the carpenter",
   liesel: "the tavern keeper", sybille: "the village healer", friedrich: "a woodcutter",
   otto: "the village elder", pater_markus: "the village priest",
-  dieter: "a miner", magda: "a villager", bertha: "a mysterious trader who arrived recently with unusual knowledge of markets",
-  heinrich: "a farmer", elke: "the seamstress", rupert: "a miner",
+  dieter: "a miner", magda: "a villager", heinrich: "a farmer", elke: "the seamstress", rupert: "a miner",
   player: "a newcomer to the village",
 };
 
@@ -264,7 +263,7 @@ async function runMeetingPhase(state: WorldState, time: SimTime): Promise<{ atte
     }
   }
 
-  // 5. Resolution — need 11 of 20 to pass
+  // 5. Resolution — need 11 of 19 to pass
   const PASS_THRESHOLD = 11;
   const passed = agreeCount >= PASS_THRESHOLD;
 
@@ -286,7 +285,7 @@ async function runMeetingPhase(state: WorldState, time: SimTime): Promise<{ atte
     emitSSE("meeting:result", { passed: true, agreeCount, law });
     console.log(`  ✅ Law passed: "${proposalText}" (${agreeCount} agreed)`);
   } else {
-    const failMsg = `Village meeting result: "${proposalText}" FAILED (${agreeCount} agreed, needed ${PASS_THRESHOLD} of 20).`;
+    const failMsg = `Village meeting result: "${proposalText}" FAILED (${agreeCount} agreed, needed ${PASS_THRESHOLD} of 19).`;
     for (const a of AGENT_NAMES) feedbackToAgent(a, state, failMsg);
     emitSSE("meeting:result", { passed: false, agreeCount });
     console.log(`  ❌ Vote failed: "${proposalText}" (${agreeCount}/${PASS_THRESHOLD})`);

@@ -5,7 +5,7 @@ export type AgentName =
   | "gerda" | "anselm" | "volker" | "wulf"
   | "liesel" | "sybille" | "friedrich"
   | "otto" | "pater_markus"
-  | "dieter" | "magda" | "bertha" | "heinrich" | "elke" | "rupert"
+  | "dieter" | "magda" | "heinrich" | "elke" | "rupert"
   | "player";
 
 export const AGENT_NAMES: AgentName[] = [
@@ -13,7 +13,7 @@ export const AGENT_NAMES: AgentName[] = [
   "gerda", "anselm", "volker", "wulf",
   "liesel", "sybille", "friedrich",
   "otto", "pater_markus",
-  "dieter", "magda", "bertha", "heinrich", "elke", "rupert",
+  "dieter", "magda", "heinrich", "elke", "rupert",
 ];
 
 export const AGENT_DISPLAY_NAMES: Record<AgentName, string> = {
@@ -21,7 +21,7 @@ export const AGENT_DISPLAY_NAMES: Record<AgentName, string> = {
   gerda: "Gerda", anselm: "Anselm", volker: "Volker", wulf: "Wulf",
   liesel: "Liesel", sybille: "Sybille", friedrich: "Friedrich",
   otto: "Otto", pater_markus: "Pater Markus",
-  dieter: "Dieter", magda: "Magda", bertha: "The Stranger", heinrich: "Heinrich",
+  dieter: "Dieter", magda: "Magda", heinrich: "Heinrich",
   elke: "Elke", rupert: "Rupert",
   player: "You",
 };
@@ -32,8 +32,7 @@ export const AGENT_HOMES: Record<AgentName, string> = {
   anselm: "Bakery", volker: "Forge", wulf: "Carpenter Shop",
   liesel: "Tavern", sybille: "Healer's Hut", friedrich: "Cottage 7",
   otto: "Elder's House", pater_markus: "Town Hall",
-  dieter: "Cottage 8", magda: "Cottage 8", bertha: "Cottage 9",
-  heinrich: "Cottage 1", elke: "Seamstress Cottage", rupert: "Cottage 3",
+  dieter: "Cottage 8", magda: "Cottage 8", heinrich: "Cottage 1", elke: "Seamstress Cottage", rupert: "Cottage 3",
   player: "Village Square",
 };
 
@@ -50,7 +49,7 @@ export const AGENT_SKILLS: Record<AgentName, Skill> = {
   bertram: "farmer", gerda: "miller", anselm: "baker", volker: "blacksmith",
   wulf: "carpenter", liesel: "tavern", sybille: "healer", friedrich: "woodcutter",
   otto: "none", pater_markus: "none",
-  dieter: "miner", magda: "none", bertha: "none", heinrich: "farmer",
+  dieter: "miner", magda: "none", heinrich: "farmer",
   elke: "seamstress", rupert: "miner",
   player: "none",
 };
@@ -60,7 +59,7 @@ export const AGENT_WORK_LOCATIONS: Record<AgentName, string> = {
   bertram: "Farm 1", gerda: "Mill", anselm: "Bakery", volker: "Forge",
   wulf: "Carpenter Shop", liesel: "Tavern", sybille: "Healer's Hut", friedrich: "Forest",
   otto: "Elder's House", pater_markus: "Town Hall",
-  dieter: "Mine", magda: "Village Square", bertha: "Village Square", heinrich: "Farm 1",
+  dieter: "Mine", magda: "Village Square", heinrich: "Farm 1",
   elke: "Seamstress Cottage", rupert: "Mine",
   player: "Village Square",
 };

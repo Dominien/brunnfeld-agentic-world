@@ -19,9 +19,6 @@ const SPRITES = {
   monkIdle:    "/assets/units/Monk/Idle.png",
   warriorIdle: "/assets/units/Warrior/Warrior_Idle.png",
   merchantIdle: "/assets/merchant/Gipsy spritesheet.png",
-  // Samurai rival
-  samuraiIdle: "/assets/samurai_rival/IDLE.png",
-  samuraiRun:  "/assets/samurai_rival/RUN.png",
 };
 
 // ─── Agent → sprite mapping ───────────────────────────────────────────────
@@ -32,8 +29,7 @@ const AGENT_SPRITE: Record<AgentName, keyof typeof SPRITES> = {
   volker: "pawnHammer", wulf: "pawnHammer", liesel: "pawnIdle",
   sybille: "pawnIdle", friedrich: "pawnWood",
   otto: "warriorIdle", pater_markus: "monkIdle",
-  dieter: "pawnPickaxe", magda: "pawnIdle", bertha: "samuraiIdle",
-  heinrich: "pawnAxe", elke: "pawnIdle", rupert: "pawnPickaxe",
+  dieter: "pawnPickaxe", magda: "pawnIdle", heinrich: "pawnAxe", elke: "pawnIdle", rupert: "pawnPickaxe",
   player: "pawnIdle",  // fallback; player uses GIF rendering
 };
 
@@ -43,7 +39,7 @@ const AGENT_COLORS: Record<AgentName, string> = {
   bertram: "#d4a870", gerda: "#d4d4a0", anselm: "#f0d890", volker: "#c84c4c",
   wulf: "#a07040", liesel: "#d878a8", sybille: "#80c8d8", friedrich: "#80a850",
   otto: "#a8a0c8", pater_markus: "#c8c8e8", dieter: "#909090", magda: "#e8b090",
-  bertha: "#e03030", heinrich: "#d8c060", elke: "#e878b8", rupert: "#b0b0b0",
+  heinrich: "#d8c060", elke: "#e878b8", rupert: "#b0b0b0",
   player: "#ffd700",
 };
 
@@ -485,42 +481,6 @@ const SAMURAI_FRAME_W = 96;
 const SAMURAI_FRAME_H = 96;
 const SAMURAI_DISPLAY = 44;
 
-function drawRivalSprite(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  isSelected: boolean,
-  isMoving: boolean,
-): void {
-  const spriteUrl = isMoving ? SPRITES.samuraiRun : SPRITES.samuraiIdle;
-  const sheet = loadSprite(spriteUrl, SAMURAI_FRAME_W, SAMURAI_FRAME_H);
-  const animFrame = Math.floor(frameIndex / (isMoving ? 3 : 7));
-
-  // Selection / idle ring (crimson)
-  ctx.strokeStyle = isSelected ? "#ff4040" : "rgba(200,30,30,0.55)";
-  ctx.lineWidth = isSelected ? 3 : 2;
-  ctx.beginPath();
-  ctx.arc(cx, cy, SAMURAI_DISPLAY / 2 + 3, 0, Math.PI * 2);
-  ctx.stroke();
-
-  if (sheet) {
-    drawSprite(ctx, sheet, animFrame, cx - SAMURAI_DISPLAY / 2, cy - SAMURAI_DISPLAY / 2, SAMURAI_DISPLAY, SAMURAI_DISPLAY);
-  } else {
-    ctx.fillStyle = "#e03030";
-    ctx.beginPath();
-    ctx.arc(cx, cy, SAMURAI_DISPLAY / 2 - 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // "The Stranger" label in crimson
-  ctx.font = "bold 8px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
-  ctx.fillText("Stranger", cx + 1, cy - SAMURAI_DISPLAY / 2 - 2);
-  ctx.fillStyle = isSelected ? "#ff6060" : "#e05050";
-  ctx.fillText("Stranger", cx, cy - SAMURAI_DISPLAY / 2 - 3);
-}
-
 function drawPlayerSprite(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -594,10 +554,6 @@ function drawAgents(
         drawPlayerSprite(ctx, cx, cy, null, false, agent === selectedAgent);
         return;
       }
-      if (agent === "bertha") {
-        drawRivalSprite(ctx, cx, cy, agent === selectedAgent, false);
-        return;
-      }
 
       drawAgentSprite(ctx, agent, cx, cy, agent === selectedAgent, false, world);
     });
@@ -613,10 +569,6 @@ function drawAgents(
     if (agent === "player") {
       if (!world.player_created) continue;
       drawPlayerSprite(ctx, cx, cy, anim, t < 1, agent === selectedAgent);
-      continue;
-    }
-    if (agent === "bertha") {
-      drawRivalSprite(ctx, cx, cy, agent === selectedAgent, t < 1);
       continue;
     }
 

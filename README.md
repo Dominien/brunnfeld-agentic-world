@@ -4,7 +4,7 @@
 
 **A medieval village economy that runs itself.**
 
-20 LLM agents live in a 22-location village. They receive no behavioral instructions, no trading strategies, no economic goals. Each agent gets a short background — name, skill, home, starting goods — and a structured world that enforces physics: hunger, tool degradation, seasonal yields, locked doors, expiring orders, spoiling food, debt.
+19 LLM agents live in a 22-location village. They receive no behavioral instructions, no trading strategies, no economic goals. Each agent gets a short background — name, skill, home, starting goods — and a structured world that enforces physics: hunger, tool degradation, seasonal yields, locked doors, expiring orders, spoiling food, debt.
 
 The agents don't produce interesting economic behavior because they're told to. They produce it because the environment constrains what's possible. A miller who controls the only flour supply creates a structural bottleneck — not because she's instructed to, but because only she has the skill and the location. That's not character design. That's supply chain architecture.
 
@@ -230,7 +230,7 @@ All trade happens at Village Square.
 Non-adjacent moves route through Village Square (2 ticks).
 ```
 
-### The 20 Agents
+### The 19 Agents
 
 | Agent | Skill | Home | Starting Coin | Role |
 |-------|-------|------|--------------|------|
@@ -251,13 +251,10 @@ Non-adjacent moves route through Village Square (2 ticks).
 | **Elke** | seamstress | Seamstress Cottage | 30c | Cloth production |
 | **Ida** | — | Cottage 2 | 12c | No production skill |
 | **Magda** | — | Cottage 8 | 10c | No production skill |
-| **The Stranger** *(Bertha)* | merchant | Cottage 9 | 55c | Time-traveller arbitrageur — buys cheap, sells high |
 | **Otto** | elder | Elder's House | 120c | Tax collector (10% every Monday) |
 | **Pater Markus** | priest | Town Hall | 25c | No economic role |
 
 **Pre-existing acquaintances** (day 1): Hans↔Heinrich, Gerda↔Anselm, Volker↔Wulf, Friedrich↔Rupert, Dieter↔Rupert, Dieter↔Magda, Liesel↔Otto, Otto↔Pater Markus
-
-**The Stranger** is a special agent — unlike the other 19 villagers she has no home skill. Her profile gives her deep knowledge of market inefficiencies, supply chain timing, and the leverage a cash-rich outsider has when seasonal scarcity hits. She starts with 55c and tools in her pack. The engine treats her identically to any other agent; her advantage is purely informational.
 
 ### Supply Chains
 
@@ -463,7 +460,7 @@ The engine writes to this file after each tick. The agent reads it at the start 
 
 1. Anselm sells flour to Gerda → engine writes `"Sold 3 flour for 18c"` to memory
 2. Next tick, Anselm reads his memory → knows Gerda buys flour in the morning
-3. Anselm can now anticipate demand, price accordingly, plan production
+3. Next tick Anselm reads his memory — he has what he needs to anticipate demand, though whether he acts on it is up to the LLM
 
 **Compression**: The 20 most recent entries stay verbatim. Older entries are batch-summarized by the engine: `[Monday]: Produced bread. Traded with Gerda. Wallet +18c.` This prevents context overflow while preserving economic history.
 
@@ -489,7 +486,7 @@ The schema is **contextual** — agents only see actions that are relevant to th
     { "type": "cancel_order", "order_id": "ord_001" },
     { "type": "send_message", "to": "Hans", "text": "Do you have wheat to sell?" },
     { "type": "give_coin",    "to": "Gerda", "amount": 10 },
-    { "type": "steal",        "target": "Bertha", "item": "bread" }
+    { "type": "steal",        "target": "Anselm", "item": "bread" }
 ]}
 ```
 
@@ -557,9 +554,9 @@ Otto calls a meeting with `call_meeting` (scheduled for next dawn). God Mode can
 
 **Meeting flow**:
 
-1. **Quorum check** — 11 of 20 agents must be at Town Hall. If not met, the meeting fails.
+1. **Quorum check** — 11 of 19 agents must be at Town Hall. If not met, the meeting fails.
 2. **Discussion** — 3 rounds with up to 4 participants (Otto always leads). Agents speak their mind; anyone can `propose_rule` with a concrete text and optional numeric value.
-3. **Vote** — All attendees vote `agree` or `disagree` on the first proposal. Need 11/20 to pass.
+3. **Vote** — All attendees vote `agree` or `disagree` on the first proposal. Need 11/19 to pass.
 4. **Resolution** — Passed laws take immediate effect: tax rate changes, marketplace hours adjust, agents are banished to Prison.
 
 Meeting attendees are **excluded from normal tick processing** while the meeting runs — they can't farm or trade during a meeting. The full discussion, vote breakdown, and outcome are recorded in the tick log under the `meeting` field.
@@ -587,9 +584,9 @@ If a banishment vote passes, the target is moved to Prison for a fixed duration 
 
 ## What Emerges
 
-None of this is instructed. These patterns emerged from structural constraints:
+These patterns arise from structural constraints the engine enforces — not because agents are instructed to exhibit them:
 
-**1. The miller becomes a power broker** — Gerda is the only agent who can convert wheat to flour. Anselm needs flour to bake. If Gerda doesn't come to the marketplace, bread production stops. Her structural position creates leverage the engine never described.
+**1. The miller becomes a power broker** — Gerda is the only agent who can convert wheat to flour. Anselm needs flour to bake. If Gerda doesn't come to the marketplace, bread production stops. Her structural position creates a bottleneck the engine enforces — whether she exercises leverage through pricing is up to the LLM.
 
 **2. Tool collapse cascades** — Tools degrade 3 points per use. Volker (blacksmith) is the only source of new tools. If he runs out of ore, or stops selling, farmers lose production capacity over time. Tool scarcity spreads through the supply chain.
 
@@ -863,14 +860,6 @@ If your hunger reaches 5 for 3 consecutive ticks, Pater Markus revives you at th
 
 ---
 
-## The Stranger
-
-One of the 20 NPC agents — **The Stranger** — is not a typical villager. She's a time-traveller merchant with deep knowledge of medieval supply chains, seasonal pricing, and arbitrage timing. She starts with 55c, a stock of bread and iron tools, and a profile that instructs her to identify and exploit price inefficiencies rather than produce goods herself.
-
-On the map she appears with a **crimson ring** and the label *"Stranger"*. In the viewer's agent list she has no home skill — just a wallet and a strategy.
-
-If you're playing, she's your rival. She's competing for the same orders and the same scarce goods, and she started with more coin than you did.
-
 ---
 
 ## God Mode & Agent Interview
@@ -909,9 +898,9 @@ Click any villager → scroll to **Interview** → ask them anything. The respon
 Type a rumor into the **Whisper** field while an agent is selected. They receive it as a message next tick and may act on it — adjust prices, hoard goods, warn others.
 
 ```
-"Whisper to Bertha: bread prices will triple by winter"
-→ Bertha receives: "A villager whispered: bread prices will triple by winter"
-→ Watch her next-tick behavior
+"Whisper to Anselm: bread prices will triple by winter"
+→ Anselm receives: "A villager whispered: bread prices will triple by winter"
+→ Watch his next-tick behavior
 ```
 
 ---
@@ -923,7 +912,7 @@ The web viewer at `http://localhost:5173` (dev) or `http://localhost:3333` (prod
 - **Canvas map** — 22 locations, pixel-art buildings, agent sprites with walk animations
 - **Terrain decorations** — rocks and bushes placed at stable seeded positions throughout the map (mine area, riverbanks, forest, farms, between cottages)
 - **Day/night cycle** — darkness overlay from 6pm, lifted at dawn
-- **Agent sprites** — pawn/warrior/monk sprites per role; The Stranger uses an animated samurai sheet with a crimson ring; your character uses an inverted-color version with a gold ring
+- **Agent sprites** — pawn/warrior/monk sprites per role; your character uses an inverted-color samurai sprite with a gold ring
 - **Right panel** — Agent detail, marketplace, economy charts, God Mode events
 - **Activity drawer** — collapsible scene chronicle at the bottom
 - **Economy strip** — always-visible wealth bar across the bottom
@@ -936,7 +925,7 @@ Most agent setups give LLMs goals and hope economic behavior follows. This proje
 
 The engine does the heavy lifting. It enforces that wheat needs milling before baking. It enforces that tools break and only one person can fix them. It enforces that hunger builds every four hours and starvation kills. It enforces that a closed bakery can't be entered at 3pm.
 
-The two-line background gives the model cultural priors from pretraining — it knows what "miller" or "blacksmith" implies. But the environment decides which of those priors get expressed. Gerda's economic influence, Volker's structural indispensability, Bertha's poverty — these are consequences of structural position, not character instructions.
+The two-line background gives the model cultural priors from pretraining — it knows what "miller" or "blacksmith" implies. But the environment decides which of those priors get expressed. Gerda's economic influence, Volker's structural indispensability — these are consequences of structural position, not character instructions.
 
 The agent just acts inside the world. The world makes the agent who they are.
 

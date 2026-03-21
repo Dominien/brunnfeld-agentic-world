@@ -14,7 +14,7 @@ export const AGENT_DISPLAY: Record<AgentName, string> = {
   gerda: "Gerda", anselm: "Anselm", volker: "Volker", wulf: "Wulf",
   liesel: "Liesel", sybille: "Sybille", friedrich: "Friedrich",
   otto: "Otto", pater_markus: "Pater Markus",
-  dieter: "Dieter", magda: "Magda", bertha: "The Stranger", heinrich: "Heinrich",
+  dieter: "Dieter", magda: "Magda", heinrich: "Heinrich",
   elke: "Elke", rupert: "Rupert",
   player: "You",
 };

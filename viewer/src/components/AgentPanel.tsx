@@ -37,7 +37,7 @@ const AGENT_PORTRAIT: Record<AgentName, number> = {
   gerda: 6, anselm: 7, volker: 8, wulf: 9,
   liesel: 10, sybille: 11, friedrich: 12,
   otto: 13, pater_markus: 14,
-  dieter: 15, magda: 16, bertha: 17, heinrich: 18,
+  dieter: 15, magda: 16, heinrich: 18,
   elke: 19, rupert: 20,
   player: 0,
 };

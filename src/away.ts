@@ -61,7 +61,6 @@ export function isWorkTime(agent: AgentName, time: SimTime): boolean {
     case "pater_markus":
     case "ida":
     case "magda":
-    case "bertha":
       return false;
 
     default:

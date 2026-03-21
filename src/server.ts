@@ -386,7 +386,6 @@ const server = createServer(async (req, res) => {
         ["/assets/items/tool/",      join(ROOT, "Items-Assets/Weapon & Tool")],
         ["/assets/items/misc/",      join(ROOT, "Items-Assets/Misc")],
         ["/assets/merchant/",        join(ROOT, "Asset_Pack/merchant")],
-["/assets/samurai_rival/",   join(ROOT, "Asset_Pack/samurai_rival/Sprites")],
         ["/assets/interior/",       join(ROOT, "Asset_Pack/interior")],
         ["/assets/terrain/decos/",   join(ROOT, "Asset_Pack/Terrain/Decorations")],
       ];

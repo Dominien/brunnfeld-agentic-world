@@ -5,7 +5,7 @@ export type AgentName =
   | "gerda" | "anselm" | "volker" | "wulf"
   | "liesel" | "sybille" | "friedrich"
   | "otto" | "pater_markus"
-  | "dieter" | "magda" | "bertha" | "heinrich" | "elke" | "rupert"
+  | "dieter" | "magda" | "heinrich" | "elke" | "rupert"
   | "player";
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
