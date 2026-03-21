@@ -7,9 +7,11 @@ import { getInventoryQty, getReserved } from "./inventory.js";
 import { getRelevantOrders } from "./marketplace.js";
 import { getToolPerception } from "./tools-degradation.js";
 import { bodyPerception } from "./body.js";
-import { ACTION_SCHEMA_PROMPT, resolveAction, type ResolveContext } from "./tools.js";
+import { buildActionSchema, resolveAction, type ResolveContext } from "./tools.js";
 import { LOCATIONS } from "./village-map.js";
+import { tickToTime } from "./time.js";
 import { RECIPES, MULTI_FARM_ITEMS } from "./production.js";
+import { computeVillageConcerns } from "./village-concerns.js";
 
 // ─── Hunger food hint ─────────────────────────────────────────
 
@@ -146,6 +148,33 @@ function getLoanPerception(agent: AgentName, state: WorldState): string {
   return `\nLoans: ${parts.join(" ")}`;
 }
 
+// ─── Governance helpers ──────────────────────────────────
+
+function getVillageLaws(state: WorldState, time: SimTime): string {
+  if (!state.active_laws || state.active_laws.length === 0) return "";
+  const lines = state.active_laws.map(law => {
+    const day = Math.ceil(law.passedTick / 16);
+    if (law.type === "tax_change") return `- Tax rate: ${Math.round((law.value ?? 0.1) * 100)}% (passed day ${day})`;
+    if (law.type === "banishment" && law.target) {
+      const untilTick = state.banned?.[law.target] ?? (law.passedTick + 32);
+      const untilDay = Math.ceil(untilTick / 16);
+      return `- ${AGENT_DISPLAY_NAMES[law.target]} banished until day ${untilDay}`;
+    }
+    return `- ${law.description} (passed day ${day})`;
+  });
+  return `\nVillage Laws:\n${lines.join("\n")}`;
+}
+
+function getMeetingContext(state: WorldState, time: SimTime): string {
+  const mtg = state.pending_meeting;
+  if (!mtg) return "";
+  if (time.tick < mtg.scheduledTick) {
+    const meetingTime = tickToTime(mtg.scheduledTick);
+    return `\n(Village meeting: "${mtg.description}" at the Town Hall on ${meetingTime.timeLabel}. Be there.)`;
+  }
+  return "";
+}
+
 // ─── Perception builder ──────────────────────────────────────
 
 function buildInventoryLines(agent: AgentName, state: WorldState): string {
@@ -255,10 +284,21 @@ export function buildPerception(
   const activeEvents = state.active_events.length > 0
     ? `\nVillage events: ${state.active_events.map(e => e.description).join("; ")}`
     : "";
+  const lawsBlock = getVillageLaws(state, time);
+  const meetingCtx = getMeetingContext(state, time);
 
-  return `You are ${AGENT_DISPLAY_NAMES[agent]}.
+  const villageConcernsBlock = agent === "otto"
+    ? (() => {
+        const concerns = computeVillageConcerns(state, time.tick);
+        return concerns.length > 0 ? "\n" + concerns.join("\n") : "";
+      })()
+    : "";
+
+  return `RULE: Speech NEVER moves goods or coin. Only post_order and buy_item create real transfers. Saying "here are 4 coins" does nothing.
+
+You are ${AGENT_DISPLAY_NAMES[agent]}.
 Location: ${location}. ${time.timeLabel}. ${time.season.charAt(0).toUpperCase() + time.season.slice(1)}, day ${time.seasonDay}/7.
-Weather: ${state.weather}${activeEvents}
+Weather: ${state.weather}${activeEvents}${lawsBlock}${meetingCtx}${villageConcernsBlock}
 
 ${othersStr}${soundsStr ? "\n" + soundsStr : ""}${keeperNote ? "\n" + keeperNote : ""}
 ${bodyNote ? bodyNote + "\n" : ""}${hungryHint ? hungryHint + "\n" : ""}
@@ -272,9 +312,42 @@ ${marketboardLines}
 ${pendingMessages ? `Messages:\n${pendingMessages}\n` : ""}${feedback ? `Last tick feedback:\n${feedback}\n` : ""}${conversationSoFar ? `\nConversation so far:\n${conversationSoFar}\n` : ""}`.trim();
 }
 
+export function buildMeetingPerception(
+  agent: AgentName,
+  state: WorldState,
+  time: SimTime,
+  conversationSoFar: string,
+  othersPresent: string[],
+  meetingPhase: "discussion" | "vote",
+  proposal?: string,
+): string {
+  const mtg = state.pending_meeting!;
+  const eco = state.economics[agent];
+  const body = state.body[agent];
+  const feedback = (state.action_feedback[agent] ?? []).join("\n");
+  const lawsBlock = getVillageLaws(state, time);
+
+  const othersStr = othersPresent.length > 0
+    ? `Present: ${othersPresent.join(", ")}.`
+    : "You are alone here.";
+
+  const phaseNote = meetingPhase === "discussion"
+    ? `\n=== VILLAGE MEETING — DISCUSSION ===\nAgenda: "${mtg.description}" (${mtg.agendaType.replace("_", " ")})\nSpeak your mind. If you have a concrete proposal, use propose_rule with a specific text (and value if it's numeric, e.g. tax rate 0.15). You can also just speak or think.`
+    : `\n=== VILLAGE MEETING — VOTE ===\nProposal on the table: "${proposal ?? "(no specific rule proposed)"}"\nUse the vote action with side "agree" or "disagree". Speak first if you want.`;
+
+  return `You are ${AGENT_DISPLAY_NAMES[agent]}.
+Location: Town Hall. ${time.timeLabel}. ${time.season.charAt(0).toUpperCase() + time.season.slice(1)}, day ${time.seasonDay}/7.
+Weather: ${state.weather}${lawsBlock}
+
+${othersStr}
+${body.hunger > 1 ? `Hunger: ${body.hunger}/5.` : ""}
+Wallet: ${eco.wallet} coin
+${feedback ? `Last tick feedback:\n${feedback}\n` : ""}${conversationSoFar ? `\nConversation so far:\n${conversationSoFar}\n` : ""}${phaseNote}`.trim();
+}
+
 // ─── Prompt builder ───────────────────────────────────────────
 
-function buildPrompt(agent: AgentName, perception: string): string {
+function buildPrompt(agent: AgentName, perception: string, actionSchema: string): string {
   const name = AGENT_DISPLAY_NAMES[agent];
   const profile = readAgentProfile(agent);
   const memory = readAgentMemory(agent);
@@ -291,7 +364,7 @@ ${memory}
 
 ${perception}
 
-${ACTION_SCHEMA_PROMPT}`;
+${actionSchema}`;
 }
 
 // ─── Run single agent turn ────────────────────────────────────
@@ -302,33 +375,42 @@ export async function runAgentTurn(
   context: ResolveContext,
 ): Promise<AgentTurnResult> {
   const model = process.env.CHARACTER_MODEL || "haiku";
-  const prompt = buildPrompt(agent, perception);
+  const hasConcerns = computeVillageConcerns(context.state, context.time.tick).length > 0;
+  const atMeeting = context.agentLocation === "Town Hall" && !!context.state.pending_meeting;
+  const prompt = buildPrompt(agent, perception, buildActionSchema(agent, hasConcerns, atMeeting));
   const name = AGENT_DISPLAY_NAMES[agent];
 
   // Emit "agent is thinking" to frontend
   emitSSE("agent:thinking", { agent, name });
-  process.stdout.write(`\n  ✦ ${name}: `);
 
   let response: { actions: AgentAction[] };
   try {
     response = await callClaudeJSON<{ actions: AgentAction[] }>(prompt, {
       model,
       onChunk: (chunk) => {
-        process.stdout.write(chunk);
         emitSSE("agent:stream", { agent, name, chunk });
       },
     });
   } catch (err) {
-    process.stdout.write("\n");
-    emitSSE("agent:stream", { agent, name, chunk: "" });  // clear stream
+    emitSSE("agent:stream", { agent, name, chunk: "" });
     console.error(`  LLM error for ${agent}: ${err}. Defaulting to wait.`);
     return { agent, actions: [{ type: "wait", result: "", visible: false }], pendingMove: undefined };
   }
-  process.stdout.write("\n");
   emitSSE("agent:stream", { agent, name, chunk: "" });  // signal stream done
 
-  const actions = (response.actions || []).map(action => resolveAction(action, context));
+  const actions = (response.actions || []).map(action => {
+    // Fallback: if LLM omitted type but sent text, treat as a thought
+    const sanitized = action.type ? action : { ...action, type: "think" as const };
+    return resolveAction(sanitized, context);
+  });
   if (actions.length === 0) actions.push(resolveAction({ type: "wait" }, context));
+
+  // One-line terminal summary per agent (collected after resolution, no interleaving)
+  const summary = actions
+    .filter(a => a.type !== "think" && a.type !== "wait")
+    .map(a => a.type === "move_to" ? `→${a.location}` : a.type)
+    .join(", ") || "wait";
+  console.log(`  ✦ ${name}: ${summary}`);
 
   // Emit move actions immediately so the map animates in real-time
   for (const action of actions) {

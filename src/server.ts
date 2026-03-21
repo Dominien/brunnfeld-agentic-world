@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, extname } from "path";
 import { eventBus, emitSSE } from "./events.js";
 import { readWorldState, writeWorldState } from "./memory.js";
-import { triggerEvent, runInterview } from "./god-mode.js";
+import { triggerEvent, triggerMeeting, runInterview } from "./god-mode.js";
 import { queueMessage } from "./messages.js";
 import type { AgentName, AgentAction } from "./types.js";
 import { initPlayer } from "./player.js";
@@ -91,6 +91,12 @@ const server = createServer(async (req, res) => {
         "player:created":   (e) => send({ type: "player:created", ...(e as object) }),
         "player:update":    (e) => send({ type: "player:update",  ...(e as object) }),
         "player:revived":   (e) => send({ type: "player:revived", ...(e as object) }),
+        "meeting:start":      (e) => send({ type: "meeting:start",      ...(e as object) }),
+        "meeting:phase":      (e) => send({ type: "meeting:phase",      ...(e as object) }),
+        "meeting:vote":       (e) => send({ type: "meeting:vote",       ...(e as object) }),
+        "meeting:result":     (e) => send({ type: "meeting:result",     ...(e as object) }),
+        "meeting:end":        (e) => send({ type: "meeting:end",        ...(e as object) }),
+        "meeting:quorum_fail":(e) => send({ type: "meeting:quorum_fail",...(e as object) }),
       };
 
       for (const [evt, handler] of Object.entries(handlers)) {
@@ -310,6 +316,28 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // ─── God Mode: call meeting ────────────────────
+    if (path === "/api/events/trigger-meeting" && req.method === "POST") {
+      const body = await parseBody(req);
+      const agendaType = body["agendaType"] as string;
+      const description = (body["description"] as string) ?? "Village assembly";
+      const target = body["target"] as string | undefined;
+      const validTypes = ["tax_change", "marketplace_hours", "banishment", "general_rule"];
+      headers["Content-Type"] = "application/json";
+      if (!validTypes.includes(agendaType)) {
+        res.writeHead(400, headers);
+        res.end(JSON.stringify({ ok: false, error: `Invalid agendaType: ${agendaType}` }));
+        return;
+      }
+      const state = readWorldState();
+      triggerMeeting(state, state.current_tick, agendaType as "tax_change" | "marketplace_hours" | "banishment" | "general_rule", description, target as import("./types.js").AgentName | undefined);
+      writeWorldState(state);
+      emitSSE("event:triggered", { eventType: "meeting_called", description, agendaType, agent_locations: state.agent_locations });
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
     // ─── God Mode: interview agent ─────────────────
     if (path.startsWith("/api/interview/") && req.method === "POST") {
       const agentId = path.replace("/api/interview/", "") as AgentName;
@@ -359,6 +387,7 @@ const server = createServer(async (req, res) => {
         ["/assets/items/misc/",      join(ROOT, "Items-Assets/Misc")],
         ["/assets/merchant/",        join(ROOT, "Asset_Pack/merchant")],
 ["/assets/samurai_rival/",   join(ROOT, "Asset_Pack/samurai_rival/Sprites")],
+        ["/assets/interior/",       join(ROOT, "Asset_Pack/interior")],
         ["/assets/terrain/decos/",   join(ROOT, "Asset_Pack/Terrain/Decorations")],
       ];
       for (const [prefix, dir] of assetMap) {
@@ -378,11 +407,19 @@ const server = createServer(async (req, res) => {
     }
 
     // ─── Static files (built viewer) ──────────────
-    const filePath = join(VIEWER_DIR, path === "/" ? "index.html" : path);
+    let filePath = join(VIEWER_DIR, path === "/" ? "index.html" : path);
+    // SPA fallback: unknown paths → index.html
+    if (!existsSync(filePath)) filePath = join(VIEWER_DIR, "index.html");
     if (!existsSync(filePath)) { res.writeHead(404, headers); res.end("Not found"); return; }
 
     const ext = extname(filePath);
     headers["Content-Type"] = MIME[ext] ?? "application/octet-stream";
+    // HTML must never be cached — hashed JS/CSS bundles can be cached forever
+    if (ext === ".html") {
+      headers["Cache-Control"] = "no-store";
+    } else {
+      headers["Cache-Control"] = "public, max-age=31536000, immutable";
+    }
     res.writeHead(200, headers);
     res.end(readFileSync(filePath));
   } catch (err) {

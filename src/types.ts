@@ -31,7 +31,7 @@ export const AGENT_HOMES: Record<AgentName, string> = {
   ulrich: "Cottage 4", bertram: "Cottage 5", gerda: "Mill",
   anselm: "Bakery", volker: "Forge", wulf: "Carpenter Shop",
   liesel: "Tavern", sybille: "Healer's Hut", friedrich: "Cottage 7",
-  otto: "Elder's House", pater_markus: "Church",
+  otto: "Elder's House", pater_markus: "Town Hall",
   dieter: "Cottage 8", magda: "Cottage 8", bertha: "Cottage 9",
   heinrich: "Cottage 1", elke: "Seamstress Cottage", rupert: "Cottage 3",
   player: "Village Square",
@@ -59,7 +59,7 @@ export const AGENT_WORK_LOCATIONS: Record<AgentName, string> = {
   hans: "Farm 1", ida: "Cottage 2", konrad: "Farm 2", ulrich: "Farm 3",
   bertram: "Farm 1", gerda: "Mill", anselm: "Bakery", volker: "Forge",
   wulf: "Carpenter Shop", liesel: "Tavern", sybille: "Healer's Hut", friedrich: "Forest",
-  otto: "Elder's House", pater_markus: "Church",
+  otto: "Elder's House", pater_markus: "Town Hall",
   dieter: "Mine", magda: "Village Square", bertha: "Village Square", heinrich: "Farm 1",
   elke: "Seamstress Cottage", rupert: "Mine",
   player: "Village Square",
@@ -220,15 +220,41 @@ export interface Loan {
   repaid: boolean;
 }
 
+// ─── Theft Records ─────────────────────────────────────────
+
+export interface StealRecord {
+  from: AgentName;
+  item: string;
+}
+
+// ─── Governance ────────────────────────────────────────────
+
+export interface PendingMeeting {
+  scheduledTick: number;
+  agendaType: "tax_change" | "marketplace_hours" | "banishment" | "general_rule";
+  description: string;
+  target?: AgentName;
+  calledAtTick: number;
+}
+
+export interface Law {
+  id: string;
+  type: "tax_change" | "marketplace_hours" | "banishment" | "general_rule";
+  description: string;
+  passedTick: number;
+  value?: number;
+  target?: AgentName;
+}
+
 // ─── Action Types ──────────────────────────────────────────
 
 export type AgentActionType =
-  | "speak" | "think" | "do" | "wait" | "move_to"
+  | "speak" | "think" | "wait" | "move_to" | "petition_meeting"
   | "knock_door" | "lock_door" | "unlock_door"
   | "send_message" | "leave_note" | "read"
   | "produce" | "eat"
   | "post_order" | "buy_item" | "cancel_order"
-  | "hire" | "lend_coin" | "give_coin";
+  | "hire" | "lend_coin" | "give_coin" | "steal" | "call_meeting" | "propose_rule" | "vote";
 
 export interface AgentAction {
   type: AgentActionType;
@@ -240,7 +266,7 @@ export interface AgentAction {
   // produce
   item?: ItemType | string;
   // post_order
-  side?: "sell" | "buy";
+  side?: "sell" | "buy" | "agree" | "disagree";
   quantity?: number;
   price?: number;
   // buy_item
@@ -254,6 +280,9 @@ export interface AgentAction {
   // lend_coin / give_coin
   amount?: number;
   description?: string;
+  // governance
+  agenda_type?: "tax_change" | "marketplace_hours" | "banishment" | "general_rule";
+  value?: number;
 }
 
 export interface ResolvedAction extends AgentAction {
@@ -312,6 +341,16 @@ export interface WorldState {
   // Loan records
   loans: Loan[];
 
+  // Theft records (persists forever)
+  caughtStealing: Partial<Record<AgentName, StealRecord[]>>;
+
+  // Governance
+  pending_meeting?: PendingMeeting;
+  pending_petitions?: { agent: AgentName; topic: string; tick: number }[];
+  active_laws: Law[];
+  banned: Partial<Record<AgentName, number>>;
+  tax_rate: number;
+
   // Player character
   player_created: boolean;
   pending_player_actions: AgentAction[];
@@ -324,6 +363,19 @@ export interface TickLogEntry {
   actions: { type: string; text?: string; result?: string }[];
 }
 
+export interface MeetingLog {
+  description: string;
+  agendaType: string;
+  attendees: AgentName[];
+  discussion: { agent: AgentName; text: string }[];
+  proposal: string;
+  votes: { agree: AgentName[]; disagree: AgentName[] };
+  passed: boolean;
+  agreeCount: number;
+  requiredCount: number;
+  law?: string;
+}
+
 export interface TickLog {
   tick: number;
   simulated_time: string;
@@ -333,4 +385,5 @@ export interface TickLog {
   movements: { agent: AgentName; from: string; to: string }[];
   trades: Trade[];
   productions: { agent: AgentName; item: ItemType; qty: number }[];
+  meeting?: MeetingLog;
 }

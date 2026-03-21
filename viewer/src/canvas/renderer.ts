@@ -571,6 +571,7 @@ function drawAgents(
   for (const [agent, loc] of Object.entries(world.agent_locations)) {
     if (animations.has(agent as AgentName)) continue;
     if (caravanActive && agent === "otto" && loc === "Merchant Camp") continue;
+    if (agent === "player" && !world.player_created) continue;
     if (!byLoc[loc]) byLoc[loc] = [];
     byLoc[loc]!.push(agent as AgentName);
   }
@@ -610,6 +611,7 @@ function drawAgents(
     const cy = anim.fromY + (anim.toY - anim.fromY) * ease;
 
     if (agent === "player") {
+      if (!world.player_created) continue;
       drawPlayerSprite(ctx, cx, cy, anim, t < 1, agent === selectedAgent);
       continue;
     }

@@ -1,17 +1,17 @@
-import type { AgentAction, AgentName, ItemType, Loan, ResolvedAction, WorldState, SimTime } from "./types.js";
+import type { AgentAction, AgentName, ItemType, Loan, ResolvedAction, WorldState, SimTime, StealRecord } from "./types.js";
 import { AGENT_DISPLAY_NAMES, AGENT_NAMES } from "./types.js";
-import { LOCATIONS, isValidLocation, isLocationOpen } from "./village-map.js";
+import { LOCATIONS, isValidLocation, isLocationOpen, OPENING_HOURS } from "./village-map.js";
 import { getHourIndex } from "./time.js";
 import { lockDoor, unlockDoor, resolveKnock } from "./doors.js";
 import { queueMessage } from "./messages.js";
 import { resolveEat } from "./body.js";
-import { feedbackToAgent } from "./inventory.js";
+import { feedbackToAgent, addToInventory, removeFromInventory, getInventoryQty } from "./inventory.js";
 import { executeTrade, removeOrder } from "./marketplace.js";
 import { isLocationBlockedByEvent } from "./god-mode.js";
 
-export const ACTION_SCHEMA_PROMPT = `IMPORTANT: Your wallet and inventory shown above are exact. Do not claim to have coin or goods you have not received. Verbal agreements do not transfer goods — only post_order and buy_item create actual trades.
+const CORE_ACTION_SCHEMA = `IMPORTANT: Your wallet and inventory shown above are exact. Do not claim to have coin or goods you have not received. Verbal agreements do not transfer goods — only post_order and buy_item create actual trades.
 
-Your livelihood depends on producing goods and trading them. If you can produce something at your current location, you should — it is your primary activity each turn.
+Your livelihood depends on producing goods and trading them. Producing and trading is your primary activity each turn.
 
 Respond ONLY with a JSON object:
 {
@@ -23,25 +23,38 @@ Respond ONLY with a JSON object:
 
 Available actions:
 - think: Inner thought. Fields: text. Max 10 words. Nobody else hears it.
-- speak: Say something aloud. Fields: text. Max 1 sentence, 15 words. Only if others are present. Does NOT transfer goods or coin.
-- do: Describe a physical action. Fields: text. Max 8 words.
-- wait: Do nothing. No fields.
+- speak: Say something aloud. Fields: text. Max 1 sentence, 15 words. Only if others are present.
 - move_to: Go somewhere. Fields: location. Use exact location names.
-- knock_door: Knock on someone's home door. Fields: target (first name).
-- lock_door: Lock your home door. No fields.
-- unlock_door: Unlock your home door. No fields.
-- send_message: Send a message via courier. Fields: to (first name), text.
-- leave_note: Leave a written note. Fields: location, text.
-- produce: Craft or gather an item. Fields: item. You must be at the right location with the right skill and inputs. Only submit ONCE per turn — one production per hour.
+- produce: Craft or gather an item. Fields: item. Must be at the right location with skill and inputs. Once per turn.
 - eat: Eat food from your inventory. Fields: item, quantity.
-- post_order: Post a buy or sell order on the marketplace board. Fields: side ("sell"|"buy"), item, quantity, price (per unit).
-- buy_item: Buy the cheapest available sell order. Fields: item, max_price. Must be at Village Square.
-- cancel_order: Cancel one of your marketplace orders. Fields: order_id.
-- hire: Hire a laborer for the day. Fields: target (first name), wage (coins), task (description).
-- lend_coin: Give coin to someone now as a loan they owe back. Fields: to (first name), amount (coins), description (optional note).
-- give_coin: Give coin directly with no loan record (repayment, wages, gifts). Fields: to (first name), amount (coins).
+- post_order: Post a buy or sell order. Fields: side ("sell"|"buy"), item, quantity, price (per unit).
+- buy_item: Buy from the marketplace. Fields: item, max_price. Must be at Village Square.
+- cancel_order: Cancel your marketplace order. Fields: order_id.
+- send_message: Send a written message. Fields: to (first name), text.
+- give_coin: Give coin (payment, repayment, gift). Fields: to (first name), amount.
+- steal: Steal from someone here. Fields: target (first name), item. You may be caught.
 
-Keep actions concise. Only reference things you have directly perceived or remember. Do not invent people or events.`;
+Only use actions that make sense for your current situation. Only reference things you have perceived or remember.`;
+
+export function buildActionSchema(
+  agent: AgentName,
+  hasConcerns: boolean,
+  atMeeting = false,
+): string {
+  let schema = CORE_ACTION_SCHEMA;
+  if (atMeeting) {
+    schema += `\n- propose_rule: Propose a rule for the vote. Fields: text (the rule), value? (number, e.g. 0.15 for tax rate).`;
+    schema += `\n- vote: Cast your vote. Fields: side ("agree"|"disagree").`;
+  } else if (agent === "otto" && hasConcerns) {
+    schema += `\n- call_meeting: Call a village meeting for next dawn. Fields: agenda_type ("tax_change"|"marketplace_hours"|"banishment"|"general_rule"), text (the agenda), target? (first name, banishment only).`;
+  } else if (agent !== "otto" && hasConcerns) {
+    schema += `\n- petition_meeting: Ask Otto to call a village meeting. Fields: text (what it should address).`;
+  }
+  return schema;
+}
+
+// Keep exporting a static version for meeting perception (propose_rule / vote injected separately)
+export const ACTION_SCHEMA_PROMPT = CORE_ACTION_SCHEMA;
 
 // ─── Resolve Context ──────────────────────────────────────────
 
@@ -68,7 +81,7 @@ export function resolveAction(
         a => a !== agent && state.agent_locations[a] === agentLocation
       );
       if (othersHere.length === 0) {
-        feedbackToAgent(agent, state, `[Can't speak] No one else is here to hear you. Use think or do instead.`);
+        feedbackToAgent(agent, state, `[Can't speak] No one else is here to hear you. Use think instead.`);
         return { ...action, result: "", visible: false };
       }
       return { ...action, result: `${name} says: "${action.text}"`, visible: true };
@@ -77,14 +90,11 @@ export function resolveAction(
     case "think":
       return { ...action, result: `[Thought] ${action.text}`, visible: false };
 
-    case "do":
-      return { ...action, result: `${name} ${action.text}`, visible: true };
-
     case "wait":
       return { ...action, result: "", visible: false };
 
     case "move_to": {
-      const targetLoc = action.location ?? "";
+      const targetLoc = action.location || action.text || "";
       const valid = isValidLocation(targetLoc);
       if (!valid) {
         return { ...action, result: `[Can't do that] "${targetLoc}" is not a valid location. Available: ${[...LOCATIONS].join(", ")}`, visible: false };
@@ -95,7 +105,9 @@ export function resolveAction(
       }
       const hourIdx = getHourIndex(time);
       if (!isLocationOpen(targetLoc, hourIdx)) {
-        return { ...action, result: `[Can't do that] ${targetLoc} is closed right now.`, visible: false };
+        const hrs = OPENING_HOURS[targetLoc];
+        const opensStr = hrs != null ? ` (opens at ${String(6 + hrs.open).padStart(2, "0")}:00)` : "";
+        return { ...action, result: `[Can't move] ${targetLoc} is closed right now${opensStr}.`, visible: false };
       }
       if (context.movedThisTick?.has(agent)) {
         feedbackToAgent(agent, state, `[Can't move] Already moved this hour. One move per hour.`);
@@ -163,7 +175,7 @@ export function resolveAction(
     // buy_item resolves immediately so the agent can eat in the same turn
     case "buy_item": {
       const item = action.item as ItemType | undefined;
-      const maxPrice = action.max_price;
+      const maxPrice = action.max_price != null ? Number(action.max_price) : undefined;
       if (!item || maxPrice == null) {
         return { ...action, result: "[Can't do that] buy_item requires item and max_price.", visible: false };
       }
@@ -275,6 +287,131 @@ export function resolveAction(
       state.economics[targetAgent].wallet += amount;
       feedbackToAgent(targetAgent, state, `${name} gave you ${amount} coin.`);
       return { ...action, result: `${name} gave ${amount} coin to ${AGENT_DISPLAY_NAMES[targetAgent]}.`, visible: true };
+    }
+
+    case "steal": {
+      const targetName = (action.target ?? "").toLowerCase();
+      const targetAgent = AGENT_NAMES.find(
+        a => AGENT_DISPLAY_NAMES[a].toLowerCase() === targetName
+      );
+      if (!targetAgent) {
+        return { ...action, result: `[Can't do that] Nobody named "${action.target}" is here.`, visible: false };
+      }
+      if (state.agent_locations[targetAgent] !== agentLocation) {
+        return { ...action, result: `[Can't do that] ${AGENT_DISPLAY_NAMES[targetAgent]} is not here.`, visible: false };
+      }
+      const stealItem = action.item as ItemType | undefined;
+      if (!stealItem) {
+        return { ...action, result: `[Can't do that] steal requires an item field.`, visible: false };
+      }
+      const victimInv = state.economics[targetAgent].inventory;
+      const available = getInventoryQty(victimInv, stealItem);
+      if (available < 1) {
+        return { ...action, result: `[Can't do that] ${AGENT_DISPLAY_NAMES[targetAgent]} does not have any ${stealItem}.`, visible: false };
+      }
+
+      // Count witnesses (everyone at location except thief and target)
+      const witnesses = AGENT_NAMES.filter(
+        a => a !== agent && a !== targetAgent && state.agent_locations[a] === agentLocation
+      ).length;
+
+      // 50% base, each witness multiplies remaining chance by 0.6
+      let successChance = 0.5;
+      for (let i = 0; i < witnesses; i++) successChance *= 0.6;
+      const success = Math.random() < successChance;
+
+      if (!state.caughtStealing) state.caughtStealing = {};
+
+      const victimDisplayName = AGENT_DISPLAY_NAMES[targetAgent];
+
+      if (success) {
+        removeFromInventory(victimInv, stealItem, 1);
+        addToInventory(state.economics[agent].inventory, stealItem, 1, time.tick);
+        feedbackToAgent(
+          targetAgent, state,
+          `You reach for your ${stealItem} and find it missing — someone must have taken it while you weren't looking.`
+        );
+        return { ...action, result: `${name} slips the ${stealItem} away from ${victimDisplayName} unnoticed.`, visible: false };
+      } else {
+        if (!state.caughtStealing[agent]) state.caughtStealing[agent] = [];
+        state.caughtStealing[agent]!.push({ from: targetAgent, item: stealItem });
+        feedbackToAgent(
+          targetAgent, state,
+          `You catch ${name} trying to steal your ${stealItem}!`
+        );
+        return { ...action, result: `${name} reached for ${victimDisplayName}'s ${stealItem} but was caught in the act.`, visible: false };
+      }
+    }
+
+    case "call_meeting": {
+      if (agent !== "otto") {
+        return { ...action, result: `[Can't do that] Only Otto can call a village meeting.`, visible: false };
+      }
+      if (state.pending_meeting) {
+        return { ...action, result: `[Can't do that] A meeting is already scheduled for tick ${state.pending_meeting.scheduledTick}.`, visible: false };
+      }
+      const agendaType = action.agenda_type;
+      if (!agendaType) {
+        return { ...action, result: `[Can't do that] call_meeting requires agenda_type.`, visible: false };
+      }
+      const ticksIntoCurrent = (time.tick - 1) % 16;
+      const nextDawnTick = ticksIntoCurrent === 0
+        ? time.tick + 16
+        : time.tick + (16 - ticksIntoCurrent);
+      const agendaDesc = action.text ?? action.description ?? agendaType.replace("_", " ");
+      state.pending_meeting = {
+        scheduledTick: nextDawnTick,
+        agendaType,
+        description: agendaDesc,
+        target: action.target as AgentName | undefined,
+        calledAtTick: time.tick,
+      };
+      const noticeText = `Otto has called a village meeting: "${agendaDesc}". It will be held at the Town Hall at dawn on day ${Math.ceil(nextDawnTick / 16)}. Attend if you wish to participate.`;
+      for (const a of AGENT_NAMES) {
+        feedbackToAgent(a, state, noticeText);
+      }
+      return { ...action, result: `Otto calls a village meeting on "${agendaDesc}" — scheduled for dawn of day ${Math.ceil(nextDawnTick / 16)} at the Town Hall.`, visible: true };
+    }
+
+    case "petition_meeting": {
+      if (agent === "otto") {
+        return { ...action, result: `[Can't do that] Otto calls meetings directly with call_meeting.`, visible: false };
+      }
+      const topic = action.text;
+      if (!topic) {
+        return { ...action, result: `[Can't do that] petition_meeting requires text describing the topic.`, visible: false };
+      }
+      state.pending_petitions ??= [];
+      // Replace any existing petition from this agent (one petition per agent at a time)
+      state.pending_petitions = state.pending_petitions.filter(p => p.agent !== agent);
+      state.pending_petitions.push({ agent, topic, tick: time.tick });
+      return { ...action, result: `${name} petitions Otto to call a village meeting: "${topic.substring(0, 80)}"`, visible: true };
+    }
+
+    case "propose_rule": {
+      if (agentLocation !== "Town Hall") {
+        return { ...action, result: `[Can't do that] propose_rule is only valid at the Town Hall during a meeting.`, visible: false };
+      }
+      if (!state.pending_meeting) {
+        return { ...action, result: `[Can't do that] No meeting is in progress.`, visible: false };
+      }
+      if (!action.text) {
+        return { ...action, result: `[Can't do that] propose_rule requires a text description.`, visible: false };
+      }
+      return { ...action, result: `${name} proposes: "${action.text}"`, visible: true };
+    }
+
+    case "vote": {
+      if (agentLocation !== "Town Hall") {
+        return { ...action, result: `[Can't do that] vote is only valid at the Town Hall during a meeting.`, visible: false };
+      }
+      if (!state.pending_meeting) {
+        return { ...action, result: `[Can't do that] No vote is in progress.`, visible: false };
+      }
+      if (action.side !== "agree" && action.side !== "disagree") {
+        return { ...action, result: `[Can't do that] vote requires side: "agree" or "disagree".`, visible: false };
+      }
+      return { ...action, result: `${name} votes ${action.side}.`, visible: true };
     }
 
     default:

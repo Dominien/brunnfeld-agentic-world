@@ -140,20 +140,25 @@ Tick 448 = Winter, Sunday 9pm  (end of year 1)
 
 Each `runTick()` executes in order:
 
-1. **Dawn phase** (first tick of day only): weather update, auto-eat starving agents, degrade tools, check food spoilage, clean expired notes, pay loan reminders, Monday tax collection by Otto (10% from all agents)
+1. **Dawn phase** (first tick of day only): weather update, auto-eat starving agents, degrade tools, check food spoilage, clean expired notes, pay loan reminders, Monday tax collection by Otto (10% from all agents), auto-schedule daily village assembly
 2. **Enforce closing hours** — eject agents from closed locations, route home
 3. **Update body states** — hunger +1 every 4 hours, energy decay after 2pm
 4. **Clear last tick's feedback** — save for perception, reset for next tick
-5. **Build perceptions** — full perception string per alive agent
-6. **Decision phase** — group by location, run LLM calls (solo / multi-agent rounds)
-7. **Social resolution** — apply moves, build acquaintances from co-location speech
-8. **Production resolution** — validate and execute produce actions
-9. **Marketplace resolution** — post_order, cancel_order, expire stale orders
-10. **Economic checks** — pay hired laborers, starvation check (death at tick 3)
-11. **Memory update** — write agent markdown files (experiences, people, important)
-12. **Economy snapshot** (first tick of day) — wealth, Gini, GDP, scarcity
-13. **Write state** — persist world_state.json to disk
-14. **Write tick log + SSE broadcast** — stream to web viewer
+5. **God Mode events** — expire events, apply bandit theft, expire old petitions
+6. **Player turn** — process any queued player actions immediately
+7. **Banishment enforcement** — move banned agents to Prison, release expired bans
+8. **Village meeting phase** — if a meeting is scheduled for this tick, run quorum check, discussion rounds, vote, and resolution before any normal agent turns. Attendees are excluded from step 10.
+9. **Pre-meeting nudge** — if a meeting is scheduled next tick, inject `[URGENT]` feedback to all agents
+10. **Build perceptions** — full perception string per alive non-meeting agent; Otto's perception additionally receives `[Village concern]` and `[Petition]` lines computed from world state
+11. **Decision phase** — group by location, run LLM calls (solo / multi-agent rounds)
+12. **Social resolution** — apply moves, build acquaintances from co-location speech
+13. **Production resolution** — validate and execute produce actions
+14. **Marketplace resolution** — post_order, cancel_order, expire stale orders
+15. **Economic checks** — starvation check (death at tick 3 of hunger=5)
+16. **Memory update** — write agent markdown files (experiences, people, important)
+17. **Economy snapshot** (first tick of day) — wealth, Gini, GDP, scarcity
+18. **Write state** — persist world_state.json to disk
+19. **Write tick log + SSE broadcast** — stream to web viewer; meeting ticks include full `meeting` field with discussion, votes, and outcome
 
 ### Perception Builder
 
@@ -212,8 +217,11 @@ Brunnfeld
 │  Commerce     │  Village Square (always)     │
 │               │  Tavern (10am–9pm)           │
 ├───────────────┼─────────────────────────────┤
-│  Community    │  Church (6am–8am only)       │
+│  Commerce     │  Merchant Camp (caravan only)│
+├───────────────┼─────────────────────────────┤
+│  Governance   │  Town Hall                   │
 │               │  Elder's House               │
+│               │  Prison                      │
 ├───────────────┼─────────────────────────────┤
 │  Residential  │  Cottages 1–9                │
 └───────────────┴─────────────────────────────┘
@@ -245,7 +253,7 @@ Non-adjacent moves route through Village Square (2 ticks).
 | **Magda** | — | Cottage 8 | 10c | No production skill |
 | **The Stranger** *(Bertha)* | merchant | Cottage 9 | 55c | Time-traveller arbitrageur — buys cheap, sells high |
 | **Otto** | elder | Elder's House | 120c | Tax collector (10% every Monday) |
-| **Pater Markus** | priest | Church | 25c | No economic role |
+| **Pater Markus** | priest | Town Hall | 25c | No economic role |
 
 **Pre-existing acquaintances** (day 1): Hans↔Heinrich, Gerda↔Anselm, Volker↔Wulf, Friedrich↔Rupert, Dieter↔Rupert, Dieter↔Magda, Liesel↔Otto, Otto↔Pater Markus
 
@@ -396,7 +404,7 @@ sequenceDiagram
     E->>E: Orders match → executeTrade automatically
 ```
 
-**Round limits**: Up to 4 rounds per location per tick. Stops early if no agent produces a visible action (speak, do, move, trade) in a round after round 1.
+**Round limits**: Up to 4 rounds per location per tick. Stops early if no agent produces a visible action (speak, move, trade) in a round after round 1.
 
 **Observer handling**: When 5+ agents are present, the first 4 are full participants. Remaining agents each get one solo round, see the full conversation, but don't add to it.
 
@@ -408,11 +416,10 @@ sequenceDiagram
 
 Agents can extend credit to each other. The engine tracks it.
 
-```typescript
-// Agent action:
-{ "type": "lend_coin", "to": "Hans", "amount": 10, "description": "for new tools" }
+Agents negotiate loans through speech and then use `give_coin` for transfers. The engine tracks the record.
 
-// Engine creates:
+```typescript
+// Engine loan record (created when agents negotiate a lend_coin deal):
 Loan {
   creditor: "anselm",
   debtor: "hans",
@@ -423,7 +430,6 @@ Loan {
 }
 ```
 
-- Coin transfers immediately; loan record persists
 - Overdue reminder injected into debtor's perception at dawn
 - Repayment via `give_coin` (no automatic collection — agents must negotiate)
 - Loan status shown in both parties' perceptions: `"You owe 10c to Anselm (due day 7)"`
@@ -467,24 +473,34 @@ The engine writes to this file after each tick. The agent reads it at the start 
 
 Agents respond with a JSON array of actions. The engine validates each one against world state.
 
+The schema is **contextual** — agents only see actions that are relevant to their current situation. The core schema has 11 actions. Governance actions are injected only when conditions apply.
+
+**Core actions (every tick):**
+
 ```json
 { "actions": [
-    { "type": "think",      "text": "flour running low" },
-    { "type": "speak",      "text": "Gerda, I need three units by tomorrow." },
-    { "type": "produce",    "item": "bread" },
-    { "type": "post_order", "side": "sell", "item": "bread", "quantity": 4, "price": 3 },
-    { "type": "buy_item",   "item": "flour", "max_price": 6 },
-    { "type": "eat",        "item": "bread", "quantity": 1 },
-    { "type": "move_to",    "location": "Village Square" },
-    { "type": "send_message", "to": "Hans", "text": "Do you have wheat to sell?" },
-    { "type": "lend_coin",  "to": "Gerda", "amount": 10 },
-    { "type": "give_coin",  "to": "Gerda", "amount": 10 },
-    { "type": "hire",       "target": "Ulrich", "wage": 5, "task": "harvest wheat" },
-    { "type": "leave_note", "location": "Village Square", "text": "Bread available at Bakery." },
+    { "type": "think",        "text": "flour running low" },
+    { "type": "speak",        "text": "Gerda, I need three units by tomorrow." },
+    { "type": "move_to",      "location": "Village Square" },
+    { "type": "produce",      "item": "bread" },
+    { "type": "eat",          "item": "bread", "quantity": 1 },
+    { "type": "post_order",   "side": "sell", "item": "bread", "quantity": 4, "price": 3 },
+    { "type": "buy_item",     "item": "flour", "max_price": 6 },
     { "type": "cancel_order", "order_id": "ord_001" },
-    { "type": "wait" }
+    { "type": "send_message", "to": "Hans", "text": "Do you have wheat to sell?" },
+    { "type": "give_coin",    "to": "Gerda", "amount": 10 },
+    { "type": "steal",        "target": "Bertha", "item": "bread" }
 ]}
 ```
+
+**Governance actions (contextual):**
+
+| Action | Appears when |
+|--------|-------------|
+| `call_meeting` | Otto only, when village concerns are active |
+| `petition_meeting` | Non-Otto agents, when village concerns are active |
+| `propose_rule` | At Town Hall during a meeting discussion phase |
+| `vote` | At Town Hall during a meeting vote phase |
 
 **Action constraints the engine enforces**:
 
@@ -495,11 +511,64 @@ Agents respond with a JSON array of actions. The engine validates each one again
 | `move_to "Bakery"` | Bakery closed (after 2pm) · already moved this tick |
 | `speak "..."` | Nobody else at location |
 | `eat "wheat"` | `[Can't eat] Wheat must be milled into flour first` |
-| `hire "Gerda"` | Gerda is already hired · can't hire yourself |
+| `steal` | May fail silently · or fire `[Caught stealing]` into both parties' perceptions |
 
 All rejections return as `[Can't do that] reason` in the next tick's perception. The agents learn from failed actions without being taught.
 
 ---
+
+## Village Governance
+
+Meetings emerge from real village pressure — the engine doesn't schedule them; the environment creates the conditions that make them necessary.
+
+### Village Concerns
+
+Every tick the engine scans world state and generates concern lines that are injected **only into Otto's perception**:
+
+```
+[Village concern] 4 villagers have broken tools and cannot produce: Hans, Ulrich, Bertram, Heinrich.
+[Village concern] 3 villagers are going hungry.
+[Village concern] No food is listed on the marketplace — 3 hungry villagers have nowhere to buy.
+[Village concern] Volker holds 34% of all village coin (180c of 530c total).
+[Petition] Hans: "We need a meeting about tool scarcity — farmers cannot work"
+[Petition] Ulrich: "Volker won't sell tools at fair prices. This is a crisis."
+```
+
+Otto sees the pressure. He decides whether it warrants a meeting. The engine doesn't tell him to act.
+
+**Concern thresholds**:
+
+| Concern | Threshold |
+|---------|-----------|
+| Broken tools | 2+ agents with 0% durability |
+| Critical tools | 3+ agents with ≤20% durability |
+| Hunger | 2+ agents dangerously hungry (4/5) or 3+ moderately hungry (3/5) |
+| Food drought | No food on marketplace + 2+ hungry agents |
+| Poverty | 3+ agents with fewer than 3 coin |
+| Wealth concentration | One agent holds 30%+ of all village coin |
+
+### Petitions
+
+Any non-Otto agent can use `petition_meeting` to send a formal request to Otto. Petitions appear in his perception for 1 in-game day (16 ticks). If multiple agents petition on the same topic independently, Otto sees the pattern and can act.
+
+### Village Meetings
+
+Otto calls a meeting with `call_meeting` (scheduled for next dawn). God Mode can also trigger an emergency meeting that teleports all agents to the Town Hall immediately.
+
+**Meeting flow**:
+
+1. **Quorum check** — 11 of 20 agents must be at Town Hall. If not met, the meeting fails.
+2. **Discussion** — 3 rounds with up to 4 participants (Otto always leads). Agents speak their mind; anyone can `propose_rule` with a concrete text and optional numeric value.
+3. **Vote** — All attendees vote `agree` or `disagree` on the first proposal. Need 11/20 to pass.
+4. **Resolution** — Passed laws take immediate effect: tax rate changes, marketplace hours adjust, agents are banished to Prison.
+
+Meeting attendees are **excluded from normal tick processing** while the meeting runs — they can't farm or trade during a meeting. The full discussion, vote breakdown, and outcome are recorded in the tick log under the `meeting` field.
+
+**Active laws** persist across ticks and are shown to all agents in their perception.
+
+### Banishment
+
+If a banishment vote passes, the target is moved to Prison for a fixed duration (set by the law's value). Banned agents are force-routed to Prison each tick and released when the term expires.
 
 ## Seasons & Weather
 
@@ -529,6 +598,8 @@ None of this is instructed. These patterns emerged from structural constraints:
 **4. Starvation is a coordination problem** — Hungry agents with no food must find a seller, go to Village Square, and have coin. All three can fail simultaneously. Agents who built no trading relationships during productive ticks have no one to ask when hungry.
 
 **5. Agents who die change the supply chain** — If Anselm starves, bread production stops. If Gerda dies, flour stops. The simulation has no safety nets. Death is permanent. The village can collapse.
+
+**6. Village governance emerges from scarcity** — Otto's perception accumulates `[Village concern]` lines as real thresholds are crossed: broken tools, hunger, poverty, wealth concentration. Other agents can file petitions. When enough pressure builds, Otto calls a meeting. The meeting outcome — a tax change, a forced sale, a banishment — feeds back into the supply chain the next tick.
 
 ---
 
@@ -614,8 +685,10 @@ To use free models, go to [openrouter.ai/settings/privacy](https://openrouter.ai
 
 | Command | Description |
 |---------|-------------|
-| `npm start` | Start simulation from tick 1 |
-| `npm run resume` | Continue from last saved tick |
+| `npm start` | Build viewer + start simulation from tick 1 |
+| `npm run resume` | Build viewer + continue from last saved tick |
+| `npm run dev` | Build viewer + start from tick 1 (alias) |
+| `npm run dev:resume` | Build viewer + resume (alias) |
 | `npm run tick` | Run exactly one tick |
 | `npm run reset` | Wipe state, restore initial memories |
 | `npm run server` | Start HTTP server only (viewer, no simulation) |
@@ -654,7 +727,8 @@ brunnfeld/
 │   ├── events.ts              # SSE EventEmitter
 │   ├── server.ts              # HTTP server · /api routes · static viewer
 │   ├── llm.ts                 # OpenRouter + Claude CLI · streaming · <think> stripping
-│   ├── god-mode.ts            # God Mode events · agent interview · whisper
+│   ├── god-mode.ts            # God Mode events · agent interview · whisper · meeting trigger
+│   ├── village-concerns.ts    # Village concern computation injected into Otto's perception
 │   ├── messages.ts            # send_message queuing
 │   ├── doors.ts               # lock / unlock / knock resolution
 │   ├── player.ts              # Player init · immediate action resolution · soft death revive
@@ -685,9 +759,10 @@ brunnfeld/
 | `GET /api/memories` | GET | All agent memory files |
 | `GET /api/profiles` | GET | All agent profile files |
 | `GET /api/ticks` | GET | List of available tick log IDs |
-| `GET /api/tick/:id` | GET | Single tick log (locations, trades, productions, movements) |
+| `GET /api/tick/:id` | GET | Single tick log (locations, trades, productions, movements, meeting?) |
 | `GET /stream` | GET | SSE stream of live simulation events |
 | `POST /api/events/trigger` | POST | Inject a god mode event `{ eventType }` |
+| `POST /api/events/trigger-meeting` | POST | Call emergency village meeting `{ agendaType, description, target? }` |
 | `POST /api/interview/:agent` | POST | Stream in-character agent response `{ question }` |
 | `POST /api/whisper/:agent` | POST | Queue a message to an agent `{ message }` |
 | `POST /api/player/create` | POST | Create player character `{ name, skill, location }` |
@@ -807,13 +882,16 @@ The viewer's **Events tab** lets you inject disruptions into the running simulat
 | Event | Effect | Duration |
 |---|---|---|
 | 🌵 **Drought** | Farm yields halved | 3 sim days (48 ticks) |
-| 🐪 **Caravan** | Otto floods market with cheap goods at 70% price | 1 sim day (16 ticks) |
+| 🐪 **Caravan** | Merchant arrives with cheap goods at 70% market price | 1 sim day (16 ticks) |
 | ⛏ **Mine Collapse** | Ore production blocked entirely | 2 sim days (32 ticks) |
 | 🌾 **Double Harvest** | Farm yields doubled | 1 sim day (16 ticks) |
 | ☠ **Plague Rumor** | Medicine demand surges, agents panic-buy | 2 sim days (32 ticks) |
 | 🗡 **Bandit Threat** | 5% per-tick theft risk for all agents | 2 sim days (32 ticks) |
+| 🏛 **Call Village Meeting** | Teleports all agents to Town Hall immediately; meeting fires next tick | instant |
 
 Events broadcast a message to affected agents via the message queue, so they respond in-character next tick. Active events are shown with a live countdown in the viewer.
+
+The **Call Village Meeting** button accepts an agenda type, description, and optional banishment target. All agents are teleported to Town Hall and the meeting fires on the next tick — quorum is guaranteed.
 
 ### Agent Interview
 

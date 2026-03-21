@@ -298,6 +298,34 @@ export function triggerEvent(
   }
 }
 
+// ─── Meeting trigger ──────────────────────────────────────────
+
+export function triggerMeeting(
+  state: WorldState,
+  tick: number,
+  agendaType: "tax_change" | "marketplace_hours" | "banishment" | "general_rule",
+  description: string,
+  target?: AgentName,
+): void {
+  // Use +2 so the meeting always lands on the NEXT unstarted tick, even if God Mode
+  // fires mid-tick (before the engine has written the updated current_tick to disk).
+  const scheduledTick = tick + 2;
+  state.pending_meeting = {
+    scheduledTick,
+    agendaType,
+    description,
+    target,
+    calledAtTick: tick,
+  };
+  // Teleport all agents to Town Hall so the meeting has quorum
+  for (const a of AGENT_NAMES) {
+    state.agent_locations[a] = "Town Hall";
+  }
+  const noticeText = `Otto has called an emergency village meeting: "${description}". Everyone to the Town Hall immediately!`;
+  for (const a of AGENT_NAMES) feedbackToAgent(a, state, noticeText);
+  console.log(`  🏛 [God Mode] Emergency meeting scheduled for tick ${scheduledTick} (current_tick on disk: ${tick}). All agents teleported to Town Hall.`);
+}
+
 // ─── Interview ────────────────────────────────────────────────
 
 export async function runInterview(

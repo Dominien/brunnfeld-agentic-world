@@ -1,5 +1,13 @@
 import { useState } from "react";
 import { useVillageStore } from "../store";
+import type { AgentName } from "../types";
+
+const AGENDA_TYPES = [
+  { id: "general_rule",      label: "General Rule" },
+  { id: "tax_change",        label: "Tax Change" },
+  { id: "marketplace_hours", label: "Marketplace Hours" },
+  { id: "banishment",        label: "Banishment" },
+];
 
 const EVENTS = [
   { id: "drought",        label: "Drought",        icon: "🌵", desc: "Halves farm yields for 3 days" },
@@ -13,9 +21,38 @@ const EVENTS = [
 export default function GodModePanel() {
   const world = useVillageStore((s) => s.world);
   const [firing, setFiring] = useState<string | null>(null);
+  const [agendaType, setAgendaType] = useState("general_rule");
+  const [agendaDesc, setAgendaDesc] = useState("");
+  const [banishTarget, setBanishTarget] = useState("");
+  const [meetingStatus, setMeetingStatus] = useState<string | null>(null);
+  const [callingMeeting, setCallingMeeting] = useState(false);
 
   const activeEvents = world?.active_events ?? [];
   const currentTick = world?.current_tick ?? 0;
+
+  async function callMeeting() {
+    if (!agendaDesc.trim()) { setMeetingStatus("Enter an agenda description."); return; }
+    setCallingMeeting(true);
+    setMeetingStatus(null);
+    try {
+      const res = await fetch("/api/events/trigger-meeting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agendaType,
+          description: agendaDesc.trim(),
+          ...(agendaType === "banishment" && banishTarget ? { target: banishTarget as AgentName } : {}),
+        }),
+      });
+      const data = await res.json() as { ok: boolean; error?: string };
+      setMeetingStatus(data.ok ? "Meeting called! Agents notified." : (data.error ?? "Failed."));
+      if (data.ok) setAgendaDesc("");
+    } catch {
+      setMeetingStatus("Request failed.");
+    } finally {
+      setCallingMeeting(false);
+    }
+  }
 
   async function fireEvent(id: string) {
     setFiring(id);
@@ -133,6 +170,80 @@ export default function GodModePanel() {
             );
           })}
         </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "#3a2810", margin: "14px 0 10px" }} />
+
+        {/* Call Meeting */}
+        <div style={{ fontSize: 10, color: "#c8a060", fontWeight: "bold", letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>
+          Call Village Meeting
+        </div>
+
+        <div style={{ marginBottom: 6 }}>
+          <select
+            value={agendaType}
+            onChange={e => { setAgendaType(e.target.value); setBanishTarget(""); setMeetingStatus(null); }}
+            style={{
+              width: "100%", background: "#1a1008", border: "1px solid #6a4010",
+              color: "#e8d080", fontFamily: "Georgia, serif", fontSize: 11,
+              borderRadius: 4, padding: "5px 6px", cursor: "pointer",
+            }}
+          >
+            {AGENDA_TYPES.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+          </select>
+        </div>
+
+        <textarea
+          value={agendaDesc}
+          onChange={e => { setAgendaDesc(e.target.value); setMeetingStatus(null); }}
+          placeholder="Describe the agenda…"
+          rows={2}
+          style={{
+            width: "100%", background: "#1a1008", border: "1px solid #6a4010",
+            color: "#e8d080", fontFamily: "Georgia, serif", fontSize: 11,
+            borderRadius: 4, padding: "5px 6px", resize: "vertical", boxSizing: "border-box",
+          }}
+        />
+
+        {agendaType === "banishment" && (
+          <input
+            value={banishTarget}
+            onChange={e => setBanishTarget(e.target.value)}
+            placeholder="Agent name (e.g. hans)"
+            style={{
+              width: "100%", marginTop: 4, background: "#1a1008", border: "1px solid #6a4010",
+              color: "#e8d080", fontFamily: "Georgia, serif", fontSize: 11,
+              borderRadius: 4, padding: "5px 6px", boxSizing: "border-box",
+            }}
+          />
+        )}
+
+        <button
+          onClick={callMeeting}
+          disabled={callingMeeting || !agendaDesc.trim()}
+          style={{
+            width: "100%", marginTop: 6, padding: "8px 0",
+            background: callingMeeting ? "rgba(40,25,5,0.8)" : "rgba(80,50,5,0.9)",
+            border: "1px solid #c89030", borderRadius: 4,
+            color: callingMeeting ? "#7a5830" : "#f0c040",
+            fontFamily: "Georgia, serif", fontSize: 11, fontWeight: "bold",
+            cursor: callingMeeting || !agendaDesc.trim() ? "default" : "pointer",
+            letterSpacing: 0.5,
+          }}
+        >
+          {callingMeeting ? "Calling…" : "🏛 Call Meeting Now"}
+        </button>
+
+        {meetingStatus && (
+          <div style={{
+            marginTop: 6, fontSize: 10, padding: "4px 6px", borderRadius: 3,
+            background: meetingStatus.includes("called") ? "rgba(20,60,20,0.5)" : "rgba(80,20,20,0.4)",
+            color: meetingStatus.includes("called") ? "#80d860" : "#e06060",
+            border: `1px solid ${meetingStatus.includes("called") ? "#406030" : "#803030"}`,
+          }}>
+            {meetingStatus}
+          </div>
+        )}
 
       </div>
 

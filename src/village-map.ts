@@ -1,7 +1,7 @@
 export const LOCATIONS = [
   "Village Square",
   "Bakery", "Tavern", "Forge", "Carpenter Shop", "Mill",
-  "Church", "Elder's House",
+  "Town Hall", "Prison", "Elder's House",
   "Cottage 1", "Cottage 2", "Cottage 3", "Cottage 4", "Cottage 5",
   "Cottage 6", "Cottage 7", "Cottage 8", "Cottage 9",
   "Seamstress Cottage",
@@ -16,12 +16,13 @@ export type Location = (typeof LOCATIONS)[number];
 // Adjacency: locations you can hear and move to directly in 1 tick.
 // Move to non-adjacent location costs 2 ticks (routed through Village Square).
 export const ADJACENCY: Record<string, string[]> = {
-  "Village Square":     ["Bakery", "Tavern", "Church", "Mill", "Forge", "Carpenter Shop", "Elder's House", "Cottage 1", "Farm 1", "Merchant Camp"],
+  "Village Square":     ["Bakery", "Tavern", "Town Hall", "Mill", "Forge", "Carpenter Shop", "Elder's House", "Cottage 1", "Farm 1", "Merchant Camp"],
   "Merchant Camp":      ["Village Square"],
   "Bakery":             ["Village Square", "Mill"],
   "Tavern":             ["Village Square", "Elder's House"],
-  "Church":             ["Village Square", "Elder's House"],
-  "Elder's House":      ["Church", "Tavern", "Village Square"],
+  "Town Hall":          ["Village Square", "Elder's House", "Prison"],
+  "Prison":             ["Town Hall"],
+  "Elder's House":      ["Town Hall", "Tavern", "Village Square"],
   "Mill":               ["Village Square", "Bakery", "Farm 1"],
   "Forge":              ["Village Square", "Carpenter Shop"],
   "Carpenter Shop":     ["Village Square", "Forge"],
@@ -51,7 +52,6 @@ export const OPENING_HOURS: Partial<Record<string, { open: number; close: number
   "Forge":          { open: 1, close: 10 },   // 07:00–16:00
   "Carpenter Shop": { open: 1, close: 10 },
   "Mill":           { open: 1, close: 10 },
-  "Church":         { open: 0, close: 2 },    // 06:00–08:00 (morning service only)
   "Healer's Hut":   { open: 1, close: 11 },   // 07:00–17:00
 };
 
@@ -77,7 +77,8 @@ export const LOCATION_TILES: Record<string, { tx: number; ty: number }> = {
   "Forge":              { tx: 20, ty: 9  },
   "Carpenter Shop":     { tx: 22, ty: 9  },
   "Mill":               { tx: 8,  ty: 8  },
-  "Church":             { tx: 24, ty: 8  },
+  "Town Hall":          { tx: 24, ty: 8  },
+  "Prison":             { tx: 25, ty: 9  },
   "Elder's House":      { tx: 27, ty: 8  },
   "Cottage 1":          { tx: 2,  ty: 11 },
   "Cottage 2":          { tx: 5,  ty: 11 },

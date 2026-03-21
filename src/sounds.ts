@@ -19,7 +19,7 @@ function describeLoudAction(text: string, location: string): string {
   if (lower.includes("hammer") || lower.includes("clang") || lower.includes("forge")) return `Hammering from the ${location}.`;
   if (lower.includes("chop") || lower.includes("axe") || lower.includes("split")) return `Chopping sounds from ${location}.`;
   if (lower.includes("scream") || lower.includes("yell")) return `Someone shouting near ${location}.`;
-  if (lower.includes("prayer") || lower.includes("singing") || lower.includes("bell")) return `Church bells and singing from ${location}.`;
+  if (lower.includes("prayer") || lower.includes("singing") || lower.includes("bell")) return `Bells and voices from ${location}.`;
   if (lower.includes("fire") || lower.includes("burning")) return `Crackling fire from ${location}.`;
   return `Loud noise from ${location}.`;
 }
@@ -39,21 +39,10 @@ export function getSounds(
     if (!otherLocation || !hearable.includes(otherLocation)) continue;
 
     let hasVoice = false;
-    let hasLoud = false;
-    let loudDesc = "";
-
     for (const action of actions) {
-      if (action.type === "speak" && !hasVoice) {
-        hasVoice = true;
-      }
-      if (action.type === "do" && action.text && isLoudAction(action.text) && !hasLoud) {
-        hasLoud = true;
-        loudDesc = describeLoudAction(action.text, otherLocation);
-      }
+      if (action.type === "speak" && !hasVoice) hasVoice = true;
     }
-
     if (hasVoice) sounds.push(`Voices from ${otherLocation}.`);
-    if (hasLoud)  sounds.push(loudDesc);
   }
 
   return sounds;

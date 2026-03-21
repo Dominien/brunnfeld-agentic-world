@@ -79,7 +79,9 @@ export function tickLogToFeed(log: TickLogRaw): FeedEntry[] {
           const isSpeak = action.type === "speak";
           const isDo = action.type === "do";
           const isMove = action.type === "move_to";
-          if (!isSpeak && !isDo && !isMove) continue;
+          const isPropose = action.type === "propose_rule";
+          const isVote = action.type === "vote";
+          if (!isSpeak && !isDo && !isMove && !isPropose && !isVote) continue;
           entries.push({
             id: feedCounter++,
             tick: log.tick,
@@ -139,6 +141,16 @@ export interface StreamEntry {
   text: string;
 }
 
+export interface MeetingState {
+  phase: "discussion" | "vote" | "result";
+  agendaType: string;
+  description: string;
+  attendees: AgentName[];
+  votes: Partial<Record<AgentName, "agree" | "disagree">>;
+  proposal: string | null;
+  result: { passed: boolean; agreeCount: number } | null;
+}
+
 interface VillageStore {
   world: WorldState | null;
   feed: FeedEntry[];
@@ -153,6 +165,7 @@ interface VillageStore {
   playerCreated: boolean;
   playerName: string;
   watchMode: boolean;
+  activeMeeting: MeetingState | null;
   setWatchMode: (v: boolean) => void;
 
   // Tick navigation
@@ -192,7 +205,11 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   playerCreated: false,
   playerName: "",
   watchMode: false,
-  setWatchMode: (watchMode) => set({ watchMode }),
+  activeMeeting: null,
+  setWatchMode: (watchMode) => set((s) => ({
+    watchMode,
+    selectedAgent: watchMode && s.selectedAgent === "player" ? null : s.selectedAgent,
+  })),
 
   mode: "live",
   availableTicks: [],
@@ -554,6 +571,66 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
           },
         } : s.world,
       }));
+      return;
+    }
+
+    if (e.type === "meeting:start") {
+      set({
+        activeMeeting: {
+          phase: "discussion",
+          agendaType: e.agendaType,
+          description: e.description,
+          attendees: e.attendees,
+          votes: {},
+          proposal: null,
+          result: null,
+        },
+      });
+      return;
+    }
+
+    if (e.type === "meeting:phase") {
+      if (e.phase === "vote") {
+        set((s) => ({
+          activeMeeting: s.activeMeeting ? {
+            ...s.activeMeeting,
+            phase: "vote",
+            proposal: e.proposal ?? null,
+          } : s.activeMeeting,
+        }));
+      }
+      return;
+    }
+
+    if (e.type === "meeting:vote") {
+      set((s) => ({
+        activeMeeting: s.activeMeeting ? {
+          ...s.activeMeeting,
+          votes: { ...s.activeMeeting.votes, [e.agent]: e.side },
+        } : s.activeMeeting,
+      }));
+      return;
+    }
+
+    if (e.type === "meeting:result") {
+      set((s) => ({
+        activeMeeting: s.activeMeeting ? {
+          ...s.activeMeeting,
+          phase: "result",
+          result: { passed: e.passed, agreeCount: e.agreeCount },
+        } : s.activeMeeting,
+      }));
+      return;
+    }
+
+    if (e.type === "meeting:end") {
+      setTimeout(() => set({ activeMeeting: null }), 4000);
+      return;
+    }
+
+    if (e.type === "meeting:quorum_fail") {
+      // Brief notification then clear (no meeting happened)
+      setTimeout(() => set({ activeMeeting: null }), 3000);
       return;
     }
   },

@@ -77,8 +77,9 @@ function EnergyBar({ value }: { value: number }) {
 const STATUS_ORDER = { starving: 0, sick: 1, hungry: 2, ok: 3, dead: 4 };
 
 function AgentList() {
-  const world       = useVillageStore((s) => s.world);
-  const selectAgent = useVillageStore((s) => s.selectAgent);
+  const world         = useVillageStore((s) => s.world);
+  const selectAgent   = useVillageStore((s) => s.selectAgent);
+  const playerCreated = useVillageStore((s) => s.playerCreated);
 
   if (!world) {
     return (
@@ -94,7 +95,9 @@ function AgentList() {
   }
 
   const agents = useMemo(() =>
-    (Object.keys(world.economics) as AgentName[]).slice().sort((a, b) => {
+    (Object.keys(world.economics) as AgentName[])
+    .filter(a => a !== "player" || playerCreated)
+    .slice().sort((a, b) => {
       const bodyA = world.body[a];
       const bodyB = world.body[b];
       const sa = bodyA ? STATUS_ORDER[getStatusBucket(bodyA)] : 5;

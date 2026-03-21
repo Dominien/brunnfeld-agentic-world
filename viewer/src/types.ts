@@ -136,4 +136,10 @@ export type SSEEvent =
   | { type: "order"; event: "posted" | "cancelled" | "expired"; orderId: string; agentId: AgentName; orderType?: "sell" | "buy"; item?: ItemType; quantity?: number; price?: number }
   | { type: "player:created"; agent: "player"; name: string; location: string; wallet: number; skill: string }
   | { type: "player:update"; agent: "player"; result: string; wallet: number; location: string; feedback?: string }
-  | { type: "player:revived"; agent: "player"; newWallet: number };
+  | { type: "player:revived"; agent: "player"; newWallet: number }
+  | { type: "meeting:start"; agendaType: string; description: string; attendees: AgentName[]; attendeeCount: number }
+  | { type: "meeting:phase"; phase: "discussion" | "vote"; round?: number; proposal?: string }
+  | { type: "meeting:vote"; agent: AgentName; side: "agree" | "disagree" }
+  | { type: "meeting:result"; passed: boolean; agreeCount: number; law?: unknown }
+  | { type: "meeting:end" }
+  | { type: "meeting:quorum_fail"; description: string; attendeeCount: number };
