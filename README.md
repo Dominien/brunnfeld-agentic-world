@@ -618,6 +618,14 @@ cp .env.example .env
 npm start
 ```
 
+If you want the Web UI:
+
+```bash
+cd viewer
+npm install
+npm run build
+```
+
 The simulation starts at tick 1 (Spring, Monday 6am) and streams live to `http://localhost:3333`.
 
 ---
