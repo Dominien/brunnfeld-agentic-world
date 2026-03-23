@@ -70,6 +70,87 @@ function resolveOpenRouterModel(shortOrFull?: string): string {
   return defaults[shortOrFull] ?? shortOrFull;
 }
 
+// ─── Shared OpenAI-compatible streaming fetch ──────────────────
+
+async function callOpenAICompat(
+  baseUrl: string,
+  modelId: string,
+  prompt: string,
+  extraHeaders: Record<string, string>,
+  onChunk?: (chunk: string) => void,
+): Promise<string> {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...extraHeaders },
+    body: JSON.stringify({
+      model: modelId,
+      messages: [{ role: "user", content: prompt }],
+      stream: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`LLM ${res.status}: ${err.slice(0, 200)}`);
+  }
+
+  const reader = res.body!.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  let fullText = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop() ?? "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data: ")) continue;
+      const data = trimmed.slice(6);
+      if (data === "[DONE]") continue;
+
+      try {
+        const event = JSON.parse(data) as Record<string, unknown>;
+        const choices = event.choices as Array<Record<string, unknown>>;
+        const delta = choices?.[0]?.delta as Record<string, unknown> | undefined;
+        const content = delta?.content as string | undefined;
+        if (content) {
+          fullText += content;
+          onChunk?.(content);
+        }
+      } catch { /* non-JSON line */ }
+    }
+  }
+
+  const result = fullText.trim();
+  if (!result) throw new Error("Empty response from LLM");
+  return result;
+}
+
+// ─── Local LLM backend (LM Studio, Ollama, etc.) ──────────────
+
+async function callLocalLLM(
+  prompt: string,
+  options?: { model?: string; onChunk?: (chunk: string) => void },
+): Promise<string> {
+  const baseUrl = process.env.LOCAL_LLM_BASE_URL!.replace(/\/$/, "");
+  const modelId = options?.model ?? process.env.LOCAL_LLM_MODEL ?? "local-model";
+
+  await acquireSlot();
+  try {
+    const result = await callOpenAICompat(baseUrl, modelId, prompt, {}, options?.onChunk);
+    totalCalls++;
+    totalTokensEstimated += estimateTokens(prompt) + estimateTokens(result);
+    return result;
+  } finally {
+    releaseSlot();
+  }
+}
+
 // ─── OpenRouter backend ───────────────────────────────────────
 
 async function callOpenRouter(
@@ -80,62 +161,19 @@ async function callOpenRouter(
   await acquireSlot();
 
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
+    const result = await callOpenAICompat(
+      "https://openrouter.ai/api/v1",
+      modelId,
+      prompt,
+      {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
         "X-Title": "Brunnfeld Simulation",
       },
-      body: JSON.stringify({
-        model: modelId,
-        messages: [{ role: "user", content: prompt }],
-        stream: true,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`OpenRouter ${res.status}: ${err.slice(0, 200)}`);
-    }
-
-    const reader = res.body!.getReader();
-    const dec = new TextDecoder();
-    let buf = "";
-    let fullText = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split("\n");
-      buf = lines.pop() ?? "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data: ")) continue;
-        const data = trimmed.slice(6);
-        if (data === "[DONE]") continue;
-
-        try {
-          const event = JSON.parse(data) as Record<string, unknown>;
-          const choices = event.choices as Array<Record<string, unknown>>;
-          const delta = choices?.[0]?.delta as Record<string, unknown> | undefined;
-          const content = delta?.content as string | undefined;
-          if (content) {
-            fullText += content;
-            options?.onChunk?.(content);
-          }
-        } catch { /* non-JSON line */ }
-      }
-    }
+      options?.onChunk,
+    );
 
     totalCalls++;
-    totalTokensEstimated += estimateTokens(prompt) + estimateTokens(fullText);
-
-    const result = fullText.trim();
-    if (!result) throw new Error("Empty response from OpenRouter");
+    totalTokensEstimated += estimateTokens(prompt) + estimateTokens(result);
     return result;
   } finally {
     releaseSlot();
@@ -235,16 +273,20 @@ async function callCLI(
 // ─── Public API ───────────────────────────────────────────────
 
 export function usingOpenRouter(): boolean {
-  return !!process.env.OPENROUTER_API_KEY;
+  return !process.env.LOCAL_LLM_BASE_URL && !!process.env.OPENROUTER_API_KEY;
+}
+
+export function usingLocalLLM(): boolean {
+  return !!process.env.LOCAL_LLM_BASE_URL;
 }
 
 export async function callClaude(
   prompt: string,
   options?: { model?: string; onChunk?: (chunk: string) => void },
 ): Promise<string> {
-  return usingOpenRouter()
-    ? callOpenRouter(prompt, options)
-    : callCLI(prompt, options);
+  if (usingLocalLLM()) return callLocalLLM(prompt, options);
+  if (usingOpenRouter()) return callOpenRouter(prompt, options);
+  return callCLI(prompt, options);
 }
 
 // Strip <think>...</think> blocks (MiniMax M2.x, DeepSeek R1, etc.)
