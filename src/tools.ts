@@ -5,7 +5,7 @@ import { getHourIndex } from "./time.js";
 import { lockDoor, unlockDoor, resolveKnock } from "./doors.js";
 import { queueMessage } from "./messages.js";
 import { resolveEat } from "./body.js";
-import { feedbackToAgent, addToInventory, removeFromInventory, getInventoryQty, reserveInventory } from "./inventory.js";
+import { feedbackToAgent, addToInventory, removeFromInventory, getInventoryQty, reserveInventory, unreserveInventory } from "./inventory.js";
 import { executeTrade, removeOrder, addOrder, generateOrderId } from "./marketplace.js";
 import { emitSSE } from "./events.js";
 import { isLocationBlockedByEvent } from "./god-mode.js";
@@ -404,6 +404,7 @@ export function resolveAction(
       const victimDisplayName = AGENT_DISPLAY_NAMES[targetAgent];
 
       if (success) {
+        unreserveInventory(targetAgent, stealItem, 1, state);
         removeFromInventory(victimInv, stealItem, 1);
         addToInventory(state.economics[agent].inventory, stealItem, 1, time.tick);
         feedbackToAgent(

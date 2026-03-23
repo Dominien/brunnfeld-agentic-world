@@ -182,10 +182,10 @@ function buildInventoryLines(agent: AgentName, state: WorldState): string {
   const lines = eco.inventory.items
     .filter(i => i.quantity > 0)
     .map(i => {
-      const available = i.quantity - (i.reserved ?? 0);
-      const reservedNote = (i.reserved ?? 0) > 0 ? ` (${i.reserved} reserved)` : "";
+      const reserved = i.reserved ?? 0;
+      const reservedNote = reserved > 0 ? ` (${reserved} listed for sale — will transfer when bought)` : "";
       const spoilNote = i.spoilsAtTick && i.spoilsAtTick - state.current_tick < 32 ? " [spoils soon]" : "";
-      return `${i.type} ×${available}${reservedNote}${spoilNote}`;
+      return `${i.type} ×${i.quantity}${reservedNote}${spoilNote}`;
     });
   return lines.length > 0 ? lines.join(", ") : "empty";
 }
@@ -430,7 +430,7 @@ export async function runAgentTurn(
     }
   }
 
-  const pendingMove = actions.find(a => a.type === "move_to")?.location;
+  const pendingMove = actions.find(a => a.type === "move_to" && a.visible)?.location;
   return { agent, actions, pendingMove };
 }
 

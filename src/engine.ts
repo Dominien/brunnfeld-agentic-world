@@ -1,7 +1,7 @@
 import type {
   AgentName, AgentTurnResult, Law, ResolvedAction, SimTime, TickLog, WorldState,
 } from "./types.js";
-import { AGENT_NAMES, AGENT_DISPLAY_NAMES, COUNCIL_MEMBERS } from "./types.js";
+import { AGENT_NAMES, AGENT_DISPLAY_NAMES, COUNCIL_MEMBERS, AGENT_SKILLS } from "./types.js";
 import { emitSSE } from "./events.js";
 import { tickToTime, ticksPerDay, getHourIndex } from "./time.js";
 import {
@@ -13,7 +13,7 @@ import { getLLMStats } from "./llm.js";
 import { getSounds } from "./sounds.js";
 import { deliverMessages } from "./messages.js";
 import { updateBodyState, applyDawnAutoEat, checkStarvation, isAgentDead } from "./body.js";
-import { checkSpoilage, feedbackToAgent } from "./inventory.js";
+import { checkSpoilage, feedbackToAgent, clampReservations } from "./inventory.js";
 import { degradeTools, autoEquipTools } from "./tools-degradation.js";
 import { resolveProduction } from "./production.js";
 import { tickGodModeEvents } from "./god-mode.js";
@@ -40,7 +40,11 @@ function describeAgent(agent: AgentName, observer: AgentName, state: WorldState)
   const knows = state.acquaintances[observer]?.includes(agent);
   if (!knows) return `${AGENT_DESCRIPTIONS[agent]} (unknown)`;
 
-  let label = AGENT_DISPLAY_NAMES[agent];
+  const skill = AGENT_SKILLS[agent];
+  let label = (skill && skill !== "none")
+    ? `${AGENT_DISPLAY_NAMES[agent]} (${skill})`
+    : AGENT_DISPLAY_NAMES[agent];
+
   const theftRecords = state.caughtStealing?.[agent];
   if (theftRecords && theftRecords.length > 0) {
     const latest = theftRecords[theftRecords.length - 1]!;
@@ -544,6 +548,12 @@ export async function runTick(tick: number): Promise<void> {
         let conversationSoFar = "";
 
         for (let round = 0; round < 4; round++) {
+          const alreadyProducing = new Set(
+            locResults
+              .filter(r => r.actions.some(a => a.type === "produce"))
+              .map(r => r.agent)
+          );
+
           const roundPerceptions: Record<AgentName, string> = {} as Record<AgentName, string>;
           for (const agent of participants) {
             const othersPresent = participants
@@ -551,9 +561,13 @@ export async function runTick(tick: number): Promise<void> {
               .map(a => describeAgent(a, agent, state));
             const pendingMessages = round === 0 ? deliverMessages(state, agent, tick) : "";
             const sounds = getSounds(agent, location, lastTickActions, state.agent_locations);
-            roundPerceptions[agent] = buildPerception(
+            let perception = buildPerception(
               agent, state, time, conversationSoFar, othersPresent, pendingMessages, sounds,
             );
+            if (round > 0 && alreadyProducing.has(agent)) {
+              perception += "\n[Engine] You have already queued production this turn. Do not produce again.";
+            }
+            roundPerceptions[agent] = perception;
           }
 
           const roundResults = await runBatchedAgents(participants, roundPerceptions, state, time, 5, movedThisTick);
@@ -617,6 +631,7 @@ export async function runTick(tick: number): Promise<void> {
   // ── 8. ECONOMIC RESOLUTION ──────────────────────────────────
   resolveProduction(allResults, state, time);
   resolveMarketplace(allResults, state, time);
+  clampReservations(state);
   resolveBarter(allResults, state, time);
   resolveHiredWages(state, time);
   checkStarvation(state, time);
@@ -651,8 +666,8 @@ export async function runTick(tick: number): Promise<void> {
   if (state.player_created && playerTurnResult) {
     const playerAction = playerTurnResult.actions[0];
     const feedback = state.action_feedback["player"] ?? [];
-    // For produce/order actions, the real result is in feedback
-    const resultText = (playerAction?.result && !playerAction.result.startsWith("(pending"))
+    // For produce actions, the real result comes from feedbackToAgent after resolution
+    const resultText = (playerAction?.result && playerAction.type !== "produce")
       ? playerAction.result
       : feedback.join("; ");
     emitSSE("player:update", {

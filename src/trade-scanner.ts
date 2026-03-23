@@ -1,5 +1,5 @@
 import type { AgentName, AgentTurnResult, ItemType, WorldState, SimTime } from "./types.js";
-import { getInventoryQty, removeFromInventory, addToInventory, feedbackToAgent } from "./inventory.js";
+import { getInventoryQty, removeFromInventory, addToInventory, feedbackToAgent, unreserveInventory } from "./inventory.js";
 import { updatePriceIndex } from "./marketplace.js";
 
 interface BarterOffer {
@@ -109,12 +109,14 @@ export function resolveBarter(
         }
         if (!valid) continue;
 
-        // Execute swap
+        // Execute swap — unreserve first so sell orders don't leave ghost reservations
         for (const { item, quantity } of offerItems) {
+          unreserveInventory(offerer, item, quantity, state);
           removeFromInventory(state.economics[offerer].inventory, item, quantity);
           addToInventory(state.economics[receiver].inventory, item, quantity, time.tick);
         }
         for (const { item, quantity } of requestItems) {
+          unreserveInventory(receiver, item, quantity, state);
           removeFromInventory(state.economics[receiver].inventory, item, quantity);
           addToInventory(state.economics[offerer].inventory, item, quantity, time.tick);
         }
