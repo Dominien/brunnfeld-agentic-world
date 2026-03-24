@@ -1,10 +1,10 @@
 import type { AgentName, WorldState } from "./types.js";
-import { AGENT_NAMES } from "./types.js";
+import { getAgentNames } from "./world-registry.js";
 import { getInventoryQty, removeFromInventory, feedbackToAgent } from "./inventory.js";
 
 // Called at dawn: break tools that hit 0, inject feedback
 export function degradeTools(state: WorldState): void {
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const eco = state.economics[agent];
     if (!eco.tool) continue;
     if (eco.tool.durability <= 0) {
@@ -16,7 +16,7 @@ export function degradeTools(state: WorldState): void {
 
 // Called after degradeTools: equip from inventory if tool is missing and stock available
 export function autoEquipTools(state: WorldState): void {
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const eco = state.economics[agent];
     if (eco.tool && eco.tool.durability > 0) continue;
     const hasStock = getInventoryQty(eco.inventory, "iron_tools") > 0;

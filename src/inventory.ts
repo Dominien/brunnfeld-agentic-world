@@ -1,5 +1,5 @@
 import type { AgentName, Inventory, InventoryItem, ItemType, WorldState, SimTime } from "./types.js";
-import { AGENT_NAMES } from "./types.js";
+import { getAgentNames } from "./world-registry.js";
 import { emitSSE } from "./events.js";
 
 // Spoilage durations in ticks (1 day = 16 ticks)
@@ -80,7 +80,7 @@ export function unreserveInventory(
 
 // Called at dawn — removes spoiled items, cancels orphaned sell orders, and gives feedback
 export function checkSpoilage(state: WorldState, time: SimTime): void {
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const inv = state.economics[agent].inventory;
     const spoiled: string[] = [];
     const spoiledTypes: ItemType[] = [];
@@ -114,7 +114,7 @@ export function checkSpoilage(state: WorldState, time: SimTime): void {
 }
 
 export function clampReservations(state: WorldState): void {
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     for (const item of state.economics[agent].inventory.items) {
       if ((item.reserved ?? 0) > item.quantity) {
         item.reserved = item.quantity;

@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import type { AgentName, ItemType, ResolvedAction, SimTime, WorldState } from "./types.js";
-import { AGENT_NAMES, AGENT_DISPLAY_NAMES } from "./types.js";
+import { getAgentNames, getDisplayName } from "./world-registry.js";
 
 const DATA_DIR = join(process.cwd(), "data");
 
@@ -139,8 +139,9 @@ function compressExperiences(entries: string[]): string[] {
     const names = new Set<string>();
 
     for (const entry of batch) {
-      for (const a of AGENT_NAMES) {
-        if (entry.includes(AGENT_DISPLAY_NAMES[a])) names.add(AGENT_DISPLAY_NAMES[a]);
+      for (const a of getAgentNames()) {
+        const dname = getDisplayName(a);
+        if (entry.includes(dname)) names.add(dname);
       }
     }
 

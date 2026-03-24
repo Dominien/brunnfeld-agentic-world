@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AgentName, WorldState, FeedEntry, SSEEvent, EconomySnapshot } from "./types";
+import type { AgentName, WorldState, FeedEntry, SSEEvent, EconomySnapshot, VillageInfo } from "./types";
 
 export interface AgentAnimation {
   agent: AgentName;
@@ -9,7 +9,7 @@ export interface AgentAnimation {
   durationMs: number;
 }
 
-export const AGENT_DISPLAY: Record<AgentName, string> = {
+const AGENT_DISPLAY_BASE: Record<string, string> = {
   hans: "Hans", ida: "Ida", konrad: "Konrad", ulrich: "Ulrich", bertram: "Bertram",
   gerda: "Gerda", anselm: "Anselm", volker: "Volker", wulf: "Wulf",
   liesel: "Liesel", sybille: "Sybille", friedrich: "Friedrich",
@@ -18,6 +18,18 @@ export const AGENT_DISPLAY: Record<AgentName, string> = {
   elke: "Elke", rupert: "Rupert",
   player: "You",
 };
+
+/** Format an agent ID as a display name (fallback for dynamically generated agents). */
+export function formatAgentName(id: string): string {
+  return AGENT_DISPLAY_BASE[id] ?? id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+/** Auto-formats unknown agent IDs so all AGENT_DISPLAY[x] calls work for generated agents. */
+export const AGENT_DISPLAY: Record<string, string> = new Proxy(AGENT_DISPLAY_BASE, {
+  get(target, prop: string) {
+    return target[prop] ?? prop.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  },
+});
 
 let feedCounter = 0;
 let orderFeedCounter = 0;
@@ -101,7 +113,7 @@ export function tickLogToFeed(log: TickLogRaw): FeedEntry[] {
       tick: log.tick,
       agent: trade.buyer,
       type: "trade",
-      text: `${AGENT_DISPLAY[trade.buyer]} bought ${trade.quantity}× ${trade.item} from ${AGENT_DISPLAY[trade.seller]} for ${trade.total} coin`,
+      text: `${formatAgentName(trade.buyer)} bought ${trade.quantity}× ${trade.item} from ${formatAgentName(trade.seller)} for ${trade.total} coin`,
     });
   }
 
@@ -111,7 +123,7 @@ export function tickLogToFeed(log: TickLogRaw): FeedEntry[] {
       tick: log.tick,
       agent: prod.agent,
       type: "production",
-      text: `${AGENT_DISPLAY[prod.agent]} produced ${prod.qty}× ${prod.item}`,
+      text: `${formatAgentName(prod.agent)} produced ${prod.qty}× ${prod.item}`,
     });
   }
 
@@ -122,7 +134,7 @@ export function tickLogToFeed(log: TickLogRaw): FeedEntry[] {
         tick: log.tick,
         agent: mv.agent,
         type: "move",
-        text: `${AGENT_DISPLAY[mv.agent]} moves to ${mv.to}`,
+        text: `${formatAgentName(mv.agent)} moves to ${mv.to}`,
         location: mv.to,
       });
     }
@@ -167,7 +179,11 @@ interface VillageStore {
   playerName: string;
   watchMode: boolean;
   activeMeeting: MeetingState | null;
+  activeVillageId: string;
+  villages: VillageInfo[];
   setWatchMode: (v: boolean) => void;
+  setActiveVillageId: (id: string) => void;
+  setVillages: (v: VillageInfo[]) => void;
 
   // Tick navigation
   mode: ViewMode;
@@ -207,10 +223,14 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   playerName: "",
   watchMode: false,
   activeMeeting: null,
+  activeVillageId: "brunnfeld",
+  villages: [],
   setWatchMode: (watchMode) => set((s) => ({
     watchMode,
     selectedAgent: watchMode && s.selectedAgent === "player" ? null : s.selectedAgent,
   })),
+  setActiveVillageId: (activeVillageId) => set({ activeVillageId }),
+  setVillages: (villages) => set({ villages }),
 
   mode: "live",
   availableTicks: [],
@@ -372,7 +392,7 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
               ...s.activeMeeting,
               discussion: [
                 ...s.activeMeeting.discussion,
-                { agent: e.agent, name: AGENT_DISPLAY[e.agent] ?? e.agent, text: e.result ?? "" },
+                { agent: e.agent, name: formatAgentName(e.agent), text: e.result ?? "" },
               ].slice(-60),
             },
           };
@@ -427,7 +447,7 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         tick: get().currentTick,
         agent: e.buyer,
         type: "trade",
-        text: `${AGENT_DISPLAY[e.buyer]} bought ${e.quantity}× ${e.item} from ${AGENT_DISPLAY[e.seller]} for ${e.total} coin`,
+        text: `${formatAgentName(e.buyer)} bought ${e.quantity}× ${e.item} from ${formatAgentName(e.seller)} for ${e.total} coin`,
       };
       const orderEntry: OrderFeedEntry = {
         id: orderFeedCounter++,
@@ -453,7 +473,7 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         tick: get().currentTick,
         agent: e.agent,
         type: "production",
-        text: `${AGENT_DISPLAY[e.agent]} produced ${e.qty}× ${e.item}`,
+        text: `${formatAgentName(e.agent)} produced ${e.qty}× ${e.item}`,
       };
       set((s) => ({ feed: [entry, ...s.feed].slice(0, 300) }));
       return;

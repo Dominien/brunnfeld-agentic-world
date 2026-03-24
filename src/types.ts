@@ -1,12 +1,9 @@
 // ─── Agents ────────────────────────────────────────────────
 
-export type AgentName =
-  | "hans" | "ida" | "konrad" | "ulrich" | "bertram"
-  | "gerda" | "anselm" | "volker" | "wulf"
-  | "liesel" | "sybille" | "friedrich"
-  | "otto" | "pater_markus"
-  | "dieter" | "magda" | "heinrich" | "elke" | "rupert"
-  | "player";
+// Widened to string to support dynamically generated multi-village worlds.
+// The hardcoded constants below (AGENT_NAMES, AGENT_SKILLS, etc.) remain as
+// defaults for the 1-village Brunnfeld world.
+export type AgentName = string;
 
 export const AGENT_NAMES: AgentName[] = [
   "hans", "ida", "konrad", "ulrich", "bertram",
@@ -124,6 +121,7 @@ export interface AgentEconomicState {
   workSchedule: { open: number; close: number };
   hiredBy?: AgentName;
   hiredUntilTick?: number;
+  villageId?: string;  // undefined = "brunnfeld" (backward compat)
 }
 
 // ─── Marketplace ───────────────────────────────────────────
@@ -355,6 +353,9 @@ export interface WorldState {
   // Player character
   player_created: boolean;
   pending_player_actions: AgentAction[];
+
+  // Multi-village: per-village marketplaces (absent = single-village mode using `marketplace`)
+  marketplaces?: Record<string, Marketplace>;
 }
 
 // ─── Tick Log ──────────────────────────────────────────────

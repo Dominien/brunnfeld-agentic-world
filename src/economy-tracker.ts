@@ -1,12 +1,14 @@
 import type { AgentName, EconomySnapshot, ItemType, WorldState, SimTime } from "./types.js";
-import { AGENT_NAMES, ALL_ITEMS } from "./types.js";
+import { ALL_ITEMS } from "./types.js";
+import { getAgentNames } from "./world-registry.js";
 import { calcInventoryValue } from "./inventory.js";
 
 export function takeEconomySnapshot(state: WorldState, time: SimTime): void {
   // Only snapshot once per day (at dawn)
   if (!time.isFirstTickOfDay) return;
 
-  const wallets = AGENT_NAMES.map(a => state.economics[a].wallet);
+  const agentNames = getAgentNames();
+  const wallets = agentNames.map(a => state.economics[a].wallet);
   const totalWealth = wallets.reduce((a, b) => a + b, 0);
 
   // Gini coefficient
@@ -25,7 +27,7 @@ export function takeEconomySnapshot(state: WorldState, time: SimTime): void {
   // Scarcity alerts: items where total village supply < 5
   const scarcityAlerts: ItemType[] = [];
   for (const item of ALL_ITEMS) {
-    const totalSupply = AGENT_NAMES.reduce((sum, a) => {
+    const totalSupply = agentNames.reduce((sum, a) => {
       return sum + (state.economics[a].inventory.items.find(i => i.type === item)?.quantity ?? 0);
     }, 0);
     if (totalSupply < 5 && ["bread", "meat", "milk", "medicine"].includes(item)) {
@@ -42,7 +44,7 @@ export function takeEconomySnapshot(state: WorldState, time: SimTime): void {
     gdp,
     priceIndex: { ...state.marketplace.priceIndex },
     scarcityAlerts,
-    wealthDistribution: AGENT_NAMES.map(a => ({
+    wealthDistribution: agentNames.map(a => ({
       agent: a,
       wallet: state.economics[a].wallet,
       inventoryValue: calcInventoryValue(state.economics[a].inventory, state.marketplace.priceIndex),

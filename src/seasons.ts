@@ -1,5 +1,5 @@
 import type { AgentName, ItemType, Season, WorldState } from "./types.js";
-import { AGENT_NAMES } from "./types.js";
+import { getAgentNames } from "./world-registry.js";
 import { getInventoryQty, removeFromInventory, feedbackToAgent } from "./inventory.js";
 
 export const SEASON_MULTIPLIERS: Record<ItemType, Record<Season, number>> = {
@@ -44,7 +44,7 @@ export function getSeasonDescription(season: Season): string {
 export function applyWinterHeating(state: WorldState): void {
   if (state.season !== "winter") return;
 
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const eco = state.economics[agent];
     const hasFirewood = getInventoryQty(eco.inventory, "firewood") > 0;
 

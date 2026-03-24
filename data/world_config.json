@@ -1,0 +1,2265 @@
+{
+  "villages": [
+    {
+      "id": "brunnfeld",
+      "name": "Brunnfeld",
+      "agents": [
+        {
+          "id": "gozelo",
+          "displayName": "Gozelo",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "adelmut",
+          "displayName": "Adelmut",
+          "skill": "farmer",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Farm 1",
+          "description": "a farmer"
+        },
+        {
+          "id": "udelinde",
+          "displayName": "Udelinde",
+          "skill": "farmer",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 2",
+          "description": "a farmer"
+        },
+        {
+          "id": "herlind",
+          "displayName": "Herlind",
+          "skill": "healer",
+          "homeLocation": "Healer's Hut",
+          "workLocation": "Healer's Hut",
+          "description": "the village healer"
+        },
+        {
+          "id": "ralf",
+          "displayName": "Ralf",
+          "skill": "farmer",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "dagmar",
+          "displayName": "Dagmar",
+          "skill": "farmer",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "armgard",
+          "displayName": "Armgard",
+          "skill": "carpenter",
+          "homeLocation": "Carpenter Shop",
+          "workLocation": "Carpenter Shop",
+          "description": "the carpenter"
+        },
+        {
+          "id": "waldfried",
+          "displayName": "Waldfried",
+          "skill": "farmer",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gotlind",
+          "displayName": "Gotlind",
+          "skill": "cattle",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "ortlinde",
+          "displayName": "Ortlinde",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "rosalinde",
+          "displayName": "Rosalinde",
+          "skill": "miner",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "haribert",
+          "displayName": "Haribert",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "landbrecht",
+          "displayName": "Landbrecht",
+          "skill": "none",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "mechthild",
+          "displayName": "Mechthild",
+          "skill": "cattle",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "anna",
+          "displayName": "Anna",
+          "skill": "none",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "jordanis",
+          "displayName": "Jordanis",
+          "skill": "miner",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "annlinde",
+          "displayName": "Annlinde",
+          "skill": "none",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "theodelinde",
+          "displayName": "Theodelinde",
+          "skill": "none",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "siegmar",
+          "displayName": "Siegmar",
+          "skill": "cattle",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "adalwin",
+          "displayName": "Adalwin",
+          "skill": "blacksmith",
+          "homeLocation": "Forge",
+          "workLocation": "Forge",
+          "description": "the blacksmith"
+        },
+        {
+          "id": "irma",
+          "displayName": "Irma",
+          "skill": "farmer",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "lena",
+          "displayName": "Lena",
+          "skill": "baker",
+          "homeLocation": "Bakery",
+          "workLocation": "Bakery",
+          "description": "the baker"
+        },
+        {
+          "id": "casimir",
+          "displayName": "Casimir",
+          "skill": "farmer",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "wigand",
+          "displayName": "Wigand",
+          "skill": "cattle",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "otger",
+          "displayName": "Otger",
+          "skill": "cattle",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "viktor",
+          "displayName": "Viktor",
+          "skill": "none",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "hildeger",
+          "displayName": "Hildeger",
+          "skill": "farmer",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "simo",
+          "displayName": "Simo",
+          "skill": "cattle",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "forchwin",
+          "displayName": "Forchwin",
+          "skill": "farmer",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gregor",
+          "displayName": "Gregor",
+          "skill": "none",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "sibrand",
+          "displayName": "Sibrand",
+          "skill": "none",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "paula",
+          "displayName": "Paula",
+          "skill": "farmer",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "kunigunde",
+          "displayName": "Kunigunde",
+          "skill": "none",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "benzo",
+          "displayName": "Benzo",
+          "skill": "farmer",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "neidhart",
+          "displayName": "Neidhart",
+          "skill": "farmer",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "theoger",
+          "displayName": "Theoger",
+          "skill": "farmer",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "raimund",
+          "displayName": "Raimund",
+          "skill": "farmer",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "hildetraud",
+          "displayName": "Hildetraud",
+          "skill": "farmer",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "markwart",
+          "displayName": "Markwart",
+          "skill": "farmer",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "otwin",
+          "displayName": "Otwin",
+          "skill": "none",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "richenza",
+          "displayName": "Richenza",
+          "skill": "cattle",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "luitbert",
+          "displayName": "Luitbert",
+          "skill": "farmer",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "ekkehard",
+          "displayName": "Ekkehard",
+          "skill": "farmer",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "ingulf",
+          "displayName": "Ingulf",
+          "skill": "farmer",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "frieda",
+          "displayName": "Frieda",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "trude",
+          "displayName": "Trude",
+          "skill": "miner",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "rabanus",
+          "displayName": "Rabanus",
+          "skill": "tavern",
+          "homeLocation": "Tavern",
+          "workLocation": "Tavern",
+          "description": "the tavern keeper"
+        },
+        {
+          "id": "ferdinand",
+          "displayName": "Ferdinand",
+          "skill": "farmer",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gretel",
+          "displayName": "Gretel",
+          "skill": "none",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "sigrid",
+          "displayName": "Sigrid",
+          "skill": "none",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "wolfbert",
+          "displayName": "Wolfbert",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "dorothea",
+          "displayName": "Dorothea",
+          "skill": "farmer",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "mechthilde",
+          "displayName": "Mechthilde",
+          "skill": "farmer",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "elfriede",
+          "displayName": "Elfriede",
+          "skill": "farmer",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "wipo",
+          "displayName": "Wipo",
+          "skill": "seamstress",
+          "homeLocation": "Seamstress Cottage",
+          "workLocation": "Seamstress Cottage",
+          "description": "the seamstress"
+        },
+        {
+          "id": "goldrun",
+          "displayName": "Goldrun",
+          "skill": "none",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "gundel",
+          "displayName": "Gundel",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "wulfbert",
+          "displayName": "Wulfbert",
+          "skill": "farmer",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "athalrat",
+          "displayName": "Athalrat",
+          "skill": "farmer",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "engelhild",
+          "displayName": "Engelhild",
+          "skill": "miner",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "dietbert",
+          "displayName": "Dietbert",
+          "skill": "farmer",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "lother",
+          "displayName": "Lother",
+          "skill": "cattle",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "ivo",
+          "displayName": "Ivo",
+          "skill": "none",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "leibgart",
+          "displayName": "Leibgart",
+          "skill": "none",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "stefan",
+          "displayName": "Stefan",
+          "skill": "farmer",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "waldemar",
+          "displayName": "Waldemar",
+          "skill": "farmer",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "folkbert",
+          "displayName": "Folkbert",
+          "skill": "none",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "willeburgis",
+          "displayName": "Willeburgis",
+          "skill": "none",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "erwin",
+          "displayName": "Erwin",
+          "skill": "miner",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "sieghard",
+          "displayName": "Sieghard",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "sigibert",
+          "displayName": "Sigibert",
+          "skill": "none",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "dietger",
+          "displayName": "Dietger",
+          "skill": "farmer",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "liuwin",
+          "displayName": "Liuwin",
+          "skill": "none",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "ulwin",
+          "displayName": "Ulwin",
+          "skill": "farmer",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "barbara",
+          "displayName": "Barbara",
+          "skill": "miner",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "meta",
+          "displayName": "Meta",
+          "skill": "farmer",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gundula",
+          "displayName": "Gundula",
+          "skill": "none",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "herman",
+          "displayName": "Herman",
+          "skill": "none",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "regina",
+          "displayName": "Regina",
+          "skill": "farmer",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "rohesia",
+          "displayName": "Rohesia",
+          "skill": "none",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "hermann",
+          "displayName": "Hermann",
+          "skill": "farmer",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "florian",
+          "displayName": "Florian",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "engilbert",
+          "displayName": "Engilbert",
+          "skill": "none",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "luise",
+          "displayName": "Luise",
+          "skill": "none",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "fridbert",
+          "displayName": "Fridbert",
+          "skill": "miner",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "franziska",
+          "displayName": "Franziska",
+          "skill": "none",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "hadwigis",
+          "displayName": "Hadwigis",
+          "skill": "none",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "isengrim",
+          "displayName": "Isengrim",
+          "skill": "cattle",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "martin",
+          "displayName": "Martin",
+          "skill": "none",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "reinhold",
+          "displayName": "Reinhold",
+          "skill": "none",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "hawis",
+          "displayName": "Hawis",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "baldram",
+          "displayName": "Baldram",
+          "skill": "none",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "aribo",
+          "displayName": "Aribo",
+          "skill": "cattle",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "engelmut",
+          "displayName": "Engelmut",
+          "skill": "miner",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "erkanbald",
+          "displayName": "Erkanbald",
+          "skill": "miller",
+          "homeLocation": "Mill",
+          "workLocation": "Mill",
+          "description": "the miller"
+        },
+        {
+          "id": "burkhard",
+          "displayName": "Burkhard",
+          "skill": "none",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "lorenz",
+          "displayName": "Lorenz",
+          "skill": "farmer",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "herwig",
+          "displayName": "Herwig",
+          "skill": "cattle",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "wasmund",
+          "displayName": "Wasmund",
+          "skill": "none",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "reinhard",
+          "displayName": "Reinhard",
+          "skill": "farmer",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "player",
+          "displayName": "You",
+          "skill": "none",
+          "homeLocation": "Village Square",
+          "workLocation": "Village Square",
+          "description": "a newcomer to the village"
+        }
+      ],
+      "locations": [
+        "Village Square",
+        "Bakery",
+        "Tavern",
+        "Forge",
+        "Carpenter Shop",
+        "Mill",
+        "Town Hall",
+        "Prison",
+        "Elder's House",
+        "Cottage 1",
+        "Cottage 2",
+        "Cottage 3",
+        "Cottage 4",
+        "Cottage 5",
+        "Cottage 6",
+        "Cottage 7",
+        "Cottage 8",
+        "Cottage 9",
+        "Seamstress Cottage",
+        "Healer's Hut",
+        "Farm 1",
+        "Farm 2",
+        "Farm 3",
+        "Forest",
+        "Mine",
+        "Merchant Camp",
+        "Road: Brunnfeld→Norddorf"
+      ],
+      "locationTypes": {
+        "Village Square": "square",
+        "Bakery": "bakery",
+        "Tavern": "tavern",
+        "Forge": "forge",
+        "Carpenter Shop": "carpenter",
+        "Mill": "mill",
+        "Town Hall": "townhall",
+        "Prison": "prison",
+        "Elder's House": "elder",
+        "Cottage 1": "cottage",
+        "Cottage 2": "cottage",
+        "Cottage 3": "cottage",
+        "Cottage 4": "cottage",
+        "Cottage 5": "cottage",
+        "Cottage 6": "cottage",
+        "Cottage 7": "cottage",
+        "Cottage 8": "cottage",
+        "Cottage 9": "cottage",
+        "Seamstress Cottage": "seamstress",
+        "Healer's Hut": "healer",
+        "Farm 1": "farm",
+        "Farm 2": "farm",
+        "Farm 3": "farm",
+        "Forest": "forest",
+        "Mine": "mine",
+        "Merchant Camp": "merchant"
+      },
+      "councilMembers": [
+        "landbrecht",
+        "erkanbald",
+        "adalwin",
+        "lena",
+        "adelmut"
+      ],
+      "adjacency": {
+        "Village Square": [
+          "Bakery",
+          "Tavern",
+          "Town Hall",
+          "Mill",
+          "Forge",
+          "Carpenter Shop",
+          "Elder's House",
+          "Cottage 1",
+          "Farm 1",
+          "Merchant Camp",
+          "Road: Brunnfeld→Norddorf"
+        ],
+        "Merchant Camp": [
+          "Village Square"
+        ],
+        "Bakery": [
+          "Village Square",
+          "Mill"
+        ],
+        "Tavern": [
+          "Village Square",
+          "Elder's House"
+        ],
+        "Town Hall": [
+          "Village Square",
+          "Elder's House",
+          "Prison"
+        ],
+        "Prison": [
+          "Town Hall"
+        ],
+        "Elder's House": [
+          "Town Hall",
+          "Tavern",
+          "Village Square"
+        ],
+        "Mill": [
+          "Village Square",
+          "Bakery",
+          "Farm 1"
+        ],
+        "Forge": [
+          "Village Square",
+          "Carpenter Shop"
+        ],
+        "Carpenter Shop": [
+          "Village Square",
+          "Forge"
+        ],
+        "Cottage 1": [
+          "Village Square",
+          "Cottage 2"
+        ],
+        "Cottage 2": [
+          "Cottage 1",
+          "Cottage 3"
+        ],
+        "Cottage 3": [
+          "Cottage 2",
+          "Cottage 4"
+        ],
+        "Cottage 4": [
+          "Cottage 3",
+          "Cottage 5"
+        ],
+        "Cottage 5": [
+          "Cottage 4",
+          "Cottage 6"
+        ],
+        "Cottage 6": [
+          "Cottage 5",
+          "Cottage 7"
+        ],
+        "Cottage 7": [
+          "Cottage 6",
+          "Cottage 8",
+          "Healer's Hut"
+        ],
+        "Cottage 8": [
+          "Cottage 7",
+          "Cottage 9"
+        ],
+        "Cottage 9": [
+          "Cottage 8",
+          "Seamstress Cottage"
+        ],
+        "Seamstress Cottage": [
+          "Cottage 9"
+        ],
+        "Healer's Hut": [
+          "Cottage 7"
+        ],
+        "Farm 1": [
+          "Village Square",
+          "Mill",
+          "Farm 2"
+        ],
+        "Farm 2": [
+          "Farm 1",
+          "Farm 3"
+        ],
+        "Farm 3": [
+          "Farm 2",
+          "Forest"
+        ],
+        "Forest": [
+          "Farm 3",
+          "Mine"
+        ],
+        "Mine": [
+          "Forest"
+        ],
+        "Road: Brunnfeld→Norddorf": [
+          "Village Square",
+          "Norddorf:Village Square"
+        ]
+      },
+      "openingHours": {
+        "Tavern": {
+          "open": 4,
+          "close": 15
+        },
+        "Bakery": {
+          "open": 0,
+          "close": 8
+        },
+        "Forge": {
+          "open": 1,
+          "close": 10
+        },
+        "Carpenter Shop": {
+          "open": 1,
+          "close": 10
+        },
+        "Mill": {
+          "open": 1,
+          "close": 10
+        },
+        "Healer's Hut": {
+          "open": 1,
+          "close": 11
+        }
+      },
+      "locationTiles": {
+        "Village Square": {
+          "tx": 16,
+          "ty": 8
+        },
+        "Bakery": {
+          "tx": 13,
+          "ty": 9
+        },
+        "Tavern": {
+          "tx": 15,
+          "ty": 9
+        },
+        "Forge": {
+          "tx": 20,
+          "ty": 9
+        },
+        "Carpenter Shop": {
+          "tx": 22,
+          "ty": 9
+        },
+        "Mill": {
+          "tx": 8,
+          "ty": 8
+        },
+        "Town Hall": {
+          "tx": 24,
+          "ty": 8
+        },
+        "Prison": {
+          "tx": 25,
+          "ty": 9
+        },
+        "Elder's House": {
+          "tx": 27,
+          "ty": 8
+        },
+        "Cottage 1": {
+          "tx": 2,
+          "ty": 11
+        },
+        "Cottage 2": {
+          "tx": 5,
+          "ty": 11
+        },
+        "Cottage 3": {
+          "tx": 8,
+          "ty": 11
+        },
+        "Cottage 4": {
+          "tx": 13,
+          "ty": 11
+        },
+        "Cottage 5": {
+          "tx": 17,
+          "ty": 11
+        },
+        "Cottage 6": {
+          "tx": 2,
+          "ty": 13
+        },
+        "Cottage 7": {
+          "tx": 5,
+          "ty": 13
+        },
+        "Cottage 8": {
+          "tx": 9,
+          "ty": 13
+        },
+        "Cottage 9": {
+          "tx": 13,
+          "ty": 13
+        },
+        "Seamstress Cottage": {
+          "tx": 20,
+          "ty": 13
+        },
+        "Healer's Hut": {
+          "tx": 24,
+          "ty": 14
+        },
+        "Farm 1": {
+          "tx": 4,
+          "ty": 4
+        },
+        "Farm 2": {
+          "tx": 13,
+          "ty": 4
+        },
+        "Farm 3": {
+          "tx": 21,
+          "ty": 4
+        },
+        "Forest": {
+          "tx": 6,
+          "ty": 1
+        },
+        "Mine": {
+          "tx": 28,
+          "ty": 1
+        },
+        "Merchant Camp": {
+          "tx": 16,
+          "ty": 5
+        }
+      }
+    },
+    {
+      "id": "norddorf",
+      "name": "Norddorf",
+      "agents": [
+        {
+          "id": "monika",
+          "displayName": "Monika",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Farm 1",
+          "description": "a farmer"
+        },
+        {
+          "id": "roswitha",
+          "displayName": "Roswitha",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "helmger",
+          "displayName": "Helmger",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "germar",
+          "displayName": "Germar",
+          "skill": "carpenter",
+          "homeLocation": "Norddorf:Carpenter Shop",
+          "workLocation": "Norddorf:Carpenter Shop",
+          "description": "the carpenter"
+        },
+        {
+          "id": "volkmar",
+          "displayName": "Volkmar",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a farmer"
+        },
+        {
+          "id": "leutgard",
+          "displayName": "Leutgard",
+          "skill": "baker",
+          "homeLocation": "Norddorf:Bakery",
+          "workLocation": "Norddorf:Bakery",
+          "description": "the baker"
+        },
+        {
+          "id": "meinolf",
+          "displayName": "Meinolf",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "herbert",
+          "displayName": "Herbert",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "hartmut",
+          "displayName": "Hartmut",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "ingelbert",
+          "displayName": "Ingelbert",
+          "skill": "woodcutter",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "erich",
+          "displayName": "Erich",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "albrade",
+          "displayName": "Albrade",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "leopold",
+          "displayName": "Leopold",
+          "skill": "miller",
+          "homeLocation": "Norddorf:Mill",
+          "workLocation": "Norddorf:Mill",
+          "description": "the miller"
+        },
+        {
+          "id": "hunold",
+          "displayName": "Hunold",
+          "skill": "blacksmith",
+          "homeLocation": "Norddorf:Forge",
+          "workLocation": "Norddorf:Forge",
+          "description": "the blacksmith"
+        },
+        {
+          "id": "reginbold",
+          "displayName": "Reginbold",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "lutgard",
+          "displayName": "Lutgard",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "sebastian",
+          "displayName": "Sebastian",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "willibald",
+          "displayName": "Willibald",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "balthazar",
+          "displayName": "Balthazar",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "erbo",
+          "displayName": "Erbo",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "werner",
+          "displayName": "Werner",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "kaspar",
+          "displayName": "Kaspar",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "josephine",
+          "displayName": "Josephine",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "stanna",
+          "displayName": "Stanna",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gerard",
+          "displayName": "Gerard",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "waldburga",
+          "displayName": "Waldburga",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "wolfgang",
+          "displayName": "Wolfgang",
+          "skill": "woodcutter",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "waldbert",
+          "displayName": "Waldbert",
+          "skill": "woodcutter",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "ruthild",
+          "displayName": "Ruthild",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "diez",
+          "displayName": "Diez",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "wilko",
+          "displayName": "Wilko",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "ruprecht",
+          "displayName": "Ruprecht",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "ulfried",
+          "displayName": "Ulfried",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "ursula",
+          "displayName": "Ursula",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "friedmar",
+          "displayName": "Friedmar",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "inge",
+          "displayName": "Inge",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "ida",
+          "displayName": "Ida",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "pabo",
+          "displayName": "Pabo",
+          "skill": "woodcutter",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "dietwin",
+          "displayName": "Dietwin",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "reginhar",
+          "displayName": "Reginhar",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "sigisbert",
+          "displayName": "Sigisbert",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "zeisela",
+          "displayName": "Zeisela",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "georg",
+          "displayName": "Georg",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gota",
+          "displayName": "Gota",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "wolfram",
+          "displayName": "Wolfram",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "gotthard",
+          "displayName": "Gotthard",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "grimbert",
+          "displayName": "Grimbert",
+          "skill": "healer",
+          "homeLocation": "Norddorf:Healer's Hut",
+          "workLocation": "Norddorf:Healer's Hut",
+          "description": "the village healer"
+        },
+        {
+          "id": "herborg",
+          "displayName": "Herborg",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "salome",
+          "displayName": "Salome",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "roderich",
+          "displayName": "Roderich",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "leonhard",
+          "displayName": "Leonhard",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "winfried",
+          "displayName": "Winfried",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "sophie",
+          "displayName": "Sophie",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "arnold",
+          "displayName": "Arnold",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "richildis",
+          "displayName": "Richildis",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "johann",
+          "displayName": "Johann",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "widbert",
+          "displayName": "Widbert",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "otmar",
+          "displayName": "Otmar",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "alheid",
+          "displayName": "Alheid",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "engelmar",
+          "displayName": "Engelmar",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "hubertus",
+          "displayName": "Hubertus",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "bernhild",
+          "displayName": "Bernhild",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "riquilda",
+          "displayName": "Riquilda",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "walburga",
+          "displayName": "Walburga",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gumbert",
+          "displayName": "Gumbert",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "ignaz",
+          "displayName": "Ignaz",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "bucelin",
+          "displayName": "Bucelin",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "dominik",
+          "displayName": "Dominik",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "gertrud",
+          "displayName": "Gertrud",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "hatto",
+          "displayName": "Hatto",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gerhild",
+          "displayName": "Gerhild",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "dietrich",
+          "displayName": "Dietrich",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "luitwin",
+          "displayName": "Luitwin",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "baturich",
+          "displayName": "Baturich",
+          "skill": "tavern",
+          "homeLocation": "Norddorf:Tavern",
+          "workLocation": "Norddorf:Tavern",
+          "description": "the tavern keeper"
+        },
+        {
+          "id": "marcward",
+          "displayName": "Marcward",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "christine",
+          "displayName": "Christine",
+          "skill": "woodcutter",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "bederun",
+          "displayName": "Bederun",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "richer",
+          "displayName": "Richer",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "hildemut",
+          "displayName": "Hildemut",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "hildolf",
+          "displayName": "Hildolf",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "reinfried",
+          "displayName": "Reinfried",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "kunhild",
+          "displayName": "Kunhild",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "ingeborg",
+          "displayName": "Ingeborg",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "uta",
+          "displayName": "Uta",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "luitgard",
+          "displayName": "Luitgard",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "helmberta",
+          "displayName": "Helmberta",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "sabine",
+          "displayName": "Sabine",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "gottlieb",
+          "displayName": "Gottlieb",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "adelbert",
+          "displayName": "Adelbert",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "winnibald",
+          "displayName": "Winnibald",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "warin",
+          "displayName": "Warin",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "conrad",
+          "displayName": "Conrad",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "erkenbald",
+          "displayName": "Erkenbald",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "heide",
+          "displayName": "Heide",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "rainald",
+          "displayName": "Rainald",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "richwin",
+          "displayName": "Richwin",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "wandeltraud",
+          "displayName": "Wandeltraud",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "gertraud",
+          "displayName": "Gertraud",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "erdmuth",
+          "displayName": "Erdmuth",
+          "skill": "seamstress",
+          "homeLocation": "Norddorf:Seamstress Cottage",
+          "workLocation": "Norddorf:Seamstress Cottage",
+          "description": "the seamstress"
+        },
+        {
+          "id": "bernd",
+          "displayName": "Bernd",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        }
+      ],
+      "locations": [
+        "Norddorf:Village Square",
+        "Norddorf:Bakery",
+        "Norddorf:Tavern",
+        "Norddorf:Forge",
+        "Norddorf:Carpenter Shop",
+        "Norddorf:Mill",
+        "Norddorf:Town Hall",
+        "Norddorf:Prison",
+        "Norddorf:Elder's House",
+        "Norddorf:Cottage 1",
+        "Norddorf:Cottage 2",
+        "Norddorf:Cottage 3",
+        "Norddorf:Cottage 4",
+        "Norddorf:Cottage 5",
+        "Norddorf:Cottage 6",
+        "Norddorf:Cottage 7",
+        "Norddorf:Cottage 8",
+        "Norddorf:Cottage 9",
+        "Norddorf:Seamstress Cottage",
+        "Norddorf:Healer's Hut",
+        "Norddorf:Farm 1",
+        "Norddorf:Farm 2",
+        "Norddorf:Farm 3",
+        "Norddorf:Forest",
+        "Norddorf:Mine",
+        "Norddorf:Merchant Camp",
+        "Road: Brunnfeld→Norddorf"
+      ],
+      "locationTypes": {
+        "Norddorf:Village Square": "square",
+        "Norddorf:Bakery": "bakery",
+        "Norddorf:Tavern": "tavern",
+        "Norddorf:Forge": "forge",
+        "Norddorf:Carpenter Shop": "carpenter",
+        "Norddorf:Mill": "mill",
+        "Norddorf:Town Hall": "townhall",
+        "Norddorf:Prison": "prison",
+        "Norddorf:Elder's House": "elder",
+        "Norddorf:Cottage 1": "cottage",
+        "Norddorf:Cottage 2": "cottage",
+        "Norddorf:Cottage 3": "cottage",
+        "Norddorf:Cottage 4": "cottage",
+        "Norddorf:Cottage 5": "cottage",
+        "Norddorf:Cottage 6": "cottage",
+        "Norddorf:Cottage 7": "cottage",
+        "Norddorf:Cottage 8": "cottage",
+        "Norddorf:Cottage 9": "cottage",
+        "Norddorf:Seamstress Cottage": "seamstress",
+        "Norddorf:Healer's Hut": "healer",
+        "Norddorf:Farm 1": "farm",
+        "Norddorf:Farm 2": "farm",
+        "Norddorf:Farm 3": "farm",
+        "Norddorf:Forest": "forest",
+        "Norddorf:Mine": "mine",
+        "Norddorf:Merchant Camp": "merchant"
+      },
+      "councilMembers": [
+        "roswitha",
+        "leopold",
+        "hunold",
+        "leutgard",
+        "monika"
+      ],
+      "adjacency": {
+        "Norddorf:Village Square": [
+          "Norddorf:Bakery",
+          "Norddorf:Tavern",
+          "Norddorf:Town Hall",
+          "Norddorf:Mill",
+          "Norddorf:Forge",
+          "Norddorf:Carpenter Shop",
+          "Norddorf:Elder's House",
+          "Norddorf:Cottage 1",
+          "Norddorf:Farm 1",
+          "Norddorf:Merchant Camp",
+          "Road: Brunnfeld→Norddorf"
+        ],
+        "Norddorf:Merchant Camp": [
+          "Norddorf:Village Square"
+        ],
+        "Norddorf:Bakery": [
+          "Norddorf:Village Square",
+          "Norddorf:Mill"
+        ],
+        "Norddorf:Tavern": [
+          "Norddorf:Village Square",
+          "Norddorf:Elder's House"
+        ],
+        "Norddorf:Town Hall": [
+          "Norddorf:Village Square",
+          "Norddorf:Elder's House",
+          "Norddorf:Prison"
+        ],
+        "Norddorf:Prison": [
+          "Norddorf:Town Hall"
+        ],
+        "Norddorf:Elder's House": [
+          "Norddorf:Town Hall",
+          "Norddorf:Tavern",
+          "Norddorf:Village Square"
+        ],
+        "Norddorf:Mill": [
+          "Norddorf:Village Square",
+          "Norddorf:Bakery",
+          "Norddorf:Farm 1"
+        ],
+        "Norddorf:Forge": [
+          "Norddorf:Village Square",
+          "Norddorf:Carpenter Shop"
+        ],
+        "Norddorf:Carpenter Shop": [
+          "Norddorf:Village Square",
+          "Norddorf:Forge"
+        ],
+        "Norddorf:Cottage 1": [
+          "Norddorf:Village Square",
+          "Norddorf:Cottage 2"
+        ],
+        "Norddorf:Cottage 2": [
+          "Norddorf:Cottage 1",
+          "Norddorf:Cottage 3"
+        ],
+        "Norddorf:Cottage 3": [
+          "Norddorf:Cottage 2",
+          "Norddorf:Cottage 4"
+        ],
+        "Norddorf:Cottage 4": [
+          "Norddorf:Cottage 3",
+          "Norddorf:Cottage 5"
+        ],
+        "Norddorf:Cottage 5": [
+          "Norddorf:Cottage 4",
+          "Norddorf:Cottage 6"
+        ],
+        "Norddorf:Cottage 6": [
+          "Norddorf:Cottage 5",
+          "Norddorf:Cottage 7"
+        ],
+        "Norddorf:Cottage 7": [
+          "Norddorf:Cottage 6",
+          "Norddorf:Cottage 8",
+          "Norddorf:Healer's Hut"
+        ],
+        "Norddorf:Cottage 8": [
+          "Norddorf:Cottage 7",
+          "Norddorf:Cottage 9"
+        ],
+        "Norddorf:Cottage 9": [
+          "Norddorf:Cottage 8",
+          "Norddorf:Seamstress Cottage"
+        ],
+        "Norddorf:Seamstress Cottage": [
+          "Norddorf:Cottage 9"
+        ],
+        "Norddorf:Healer's Hut": [
+          "Norddorf:Cottage 7"
+        ],
+        "Norddorf:Farm 1": [
+          "Norddorf:Village Square",
+          "Norddorf:Mill",
+          "Norddorf:Farm 2"
+        ],
+        "Norddorf:Farm 2": [
+          "Norddorf:Farm 1",
+          "Norddorf:Farm 3"
+        ],
+        "Norddorf:Farm 3": [
+          "Norddorf:Farm 2",
+          "Norddorf:Forest"
+        ],
+        "Norddorf:Forest": [
+          "Norddorf:Farm 3",
+          "Norddorf:Mine"
+        ],
+        "Norddorf:Mine": [
+          "Norddorf:Forest"
+        ],
+        "Road: Brunnfeld→Norddorf": [
+          "Village Square",
+          "Norddorf:Village Square"
+        ]
+      },
+      "openingHours": {
+        "Norddorf:Tavern": {
+          "open": 4,
+          "close": 15
+        },
+        "Norddorf:Bakery": {
+          "open": 0,
+          "close": 8
+        },
+        "Norddorf:Forge": {
+          "open": 1,
+          "close": 10
+        },
+        "Norddorf:Carpenter Shop": {
+          "open": 1,
+          "close": 10
+        },
+        "Norddorf:Mill": {
+          "open": 1,
+          "close": 10
+        },
+        "Norddorf:Healer's Hut": {
+          "open": 1,
+          "close": 11
+        }
+      },
+      "locationTiles": {
+        "Norddorf:Village Square": {
+          "tx": 16,
+          "ty": 8
+        },
+        "Norddorf:Bakery": {
+          "tx": 13,
+          "ty": 9
+        },
+        "Norddorf:Tavern": {
+          "tx": 15,
+          "ty": 9
+        },
+        "Norddorf:Forge": {
+          "tx": 20,
+          "ty": 9
+        },
+        "Norddorf:Carpenter Shop": {
+          "tx": 22,
+          "ty": 9
+        },
+        "Norddorf:Mill": {
+          "tx": 8,
+          "ty": 8
+        },
+        "Norddorf:Town Hall": {
+          "tx": 24,
+          "ty": 8
+        },
+        "Norddorf:Prison": {
+          "tx": 25,
+          "ty": 9
+        },
+        "Norddorf:Elder's House": {
+          "tx": 27,
+          "ty": 8
+        },
+        "Norddorf:Cottage 1": {
+          "tx": 2,
+          "ty": 11
+        },
+        "Norddorf:Cottage 2": {
+          "tx": 5,
+          "ty": 11
+        },
+        "Norddorf:Cottage 3": {
+          "tx": 8,
+          "ty": 11
+        },
+        "Norddorf:Cottage 4": {
+          "tx": 13,
+          "ty": 11
+        },
+        "Norddorf:Cottage 5": {
+          "tx": 17,
+          "ty": 11
+        },
+        "Norddorf:Cottage 6": {
+          "tx": 2,
+          "ty": 13
+        },
+        "Norddorf:Cottage 7": {
+          "tx": 5,
+          "ty": 13
+        },
+        "Norddorf:Cottage 8": {
+          "tx": 9,
+          "ty": 13
+        },
+        "Norddorf:Cottage 9": {
+          "tx": 13,
+          "ty": 13
+        },
+        "Norddorf:Seamstress Cottage": {
+          "tx": 20,
+          "ty": 13
+        },
+        "Norddorf:Healer's Hut": {
+          "tx": 24,
+          "ty": 14
+        },
+        "Norddorf:Farm 1": {
+          "tx": 4,
+          "ty": 4
+        },
+        "Norddorf:Farm 2": {
+          "tx": 13,
+          "ty": 4
+        },
+        "Norddorf:Farm 3": {
+          "tx": 21,
+          "ty": 4
+        },
+        "Norddorf:Forest": {
+          "tx": 6,
+          "ty": 1
+        },
+        "Norddorf:Mine": {
+          "tx": 28,
+          "ty": 1
+        },
+        "Norddorf:Merchant Camp": {
+          "tx": 16,
+          "ty": 5
+        }
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_brunnfeld_norddorf",
+      "name": "Road: Brunnfeld→Norddorf",
+      "connectsVillages": [
+        "brunnfeld",
+        "norddorf"
+      ],
+      "transitTicks": 2
+    }
+  ]
+}

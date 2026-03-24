@@ -1,5 +1,5 @@
 import type { AgentName, ResolvedAction } from "./types.js";
-import { ADJACENCY } from "./village-map.js";
+import { getVillageAdjacency, getVillageForLocation } from "./world-registry.js";
 
 const LOUD_KEYWORDS = [
   "hammer", "hammering", "forge", "clang", "clank", "bang",
@@ -31,7 +31,8 @@ export function getSounds(
   agentLocations: Record<AgentName, string>,
 ): string[] {
   const sounds: string[] = [];
-  const hearable = ADJACENCY[agentLocation] ?? [];
+  const villageId = getVillageForLocation(agentLocation) ?? "brunnfeld";
+  const hearable = getVillageAdjacency(villageId)[agentLocation] ?? [];
 
   for (const [otherAgent, actions] of Object.entries(allActions) as [AgentName, ResolvedAction[]][]) {
     if (otherAgent === agent) continue;

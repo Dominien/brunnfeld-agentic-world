@@ -1,6 +1,6 @@
 import type { ActiveEvent, AgentName, ItemType, WorldState } from "./types.js";
 import { readAgentProfile, readAgentMemory } from "./memory.js";
-import { AGENT_DISPLAY_NAMES, AGENT_NAMES } from "./types.js";
+import { getAgentNames, getDisplayName } from "./world-registry.js";
 import { queueMessage } from "./messages.js";
 import { addToInventory, removeFromInventory, feedbackToAgent } from "./inventory.js";
 import { callClaude } from "./llm.js";
@@ -43,9 +43,15 @@ function cleanupCaravanStock(state: WorldState): void {
     }
   }
   // Cancel open sell orders from otto for caravan items
-  state.marketplace.orders = state.marketplace.orders.filter(
-    o => !(o.agentId === "otto" && caravanItems.includes(o.item)),
-  );
+  // Clean up in all marketplaces
+  const allMkts = state.marketplaces
+    ? Object.values(state.marketplaces)
+    : [state.marketplace];
+  for (const mkt of allMkts) {
+    mkt.orders = mkt.orders.filter(
+      o => !(o.agentId === "otto" && caravanItems.includes(o.item)),
+    );
+  }
   // Move otto back to the village square
   state.agent_locations["otto"] = "Village Square";
 }
@@ -57,7 +63,7 @@ const lastBanditTheftTick: Record<AgentName, number> = {} as Record<AgentName, n
 function applyBanditTheft(state: WorldState, time: { tick: number }): void {
   if (Math.random() > 0.05) return; // 5% chance per tick
 
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const lastTick = lastBanditTheftTick[agent] ?? -999;
     if (time.tick - lastTick < 8) continue; // once per 8 ticks per agent
 
@@ -86,7 +92,7 @@ function injectLocationEventFeedback(state: WorldState, time: { tick: number }):
     if (ev.startTick !== time.tick) continue; // only on the first tick of the event
 
     const agentsAt = (loc: string): AgentName[] =>
-      AGENT_NAMES.filter(a => state.agent_locations[a] === loc);
+      getAgentNames().filter(a => state.agent_locations[a] === loc);
 
     switch (ev.type) {
       case "drought":
@@ -166,7 +172,9 @@ export function triggerCaravan(state: WorldState, tick: number): ActiveEvent {
   };
   state.active_events.push(ev);
 
-  const priceIndex = state.marketplace.priceIndex;
+  const ottoVillageId = state.economics["otto"]?.villageId ?? "brunnfeld";
+  const ottoMkt = state.marketplaces ? (state.marketplaces[ottoVillageId] ?? state.marketplace) : state.marketplace;
+  const priceIndex = ottoMkt.priceIndex;
   const PRICE_FLOORS: Partial<Record<ItemType, number>> = {
     wheat: 3, bread: 5, vegetables: 2, medicine: 8, cloth: 6,
   };
@@ -186,7 +194,7 @@ export function triggerCaravan(state: WorldState, tick: number): ActiveEvent {
     const basePrice = priceIndex[item] ?? PRICE_FLOORS[item] ?? 5;
     const price = Math.max(1, Math.floor(basePrice * 0.7));
 
-    state.marketplace.orders.push({
+    ottoMkt.orders.push({
       id: `caravan_${item}_${tick}`,
       agentId: "otto",
       type: "sell",
@@ -244,7 +252,7 @@ export function triggerPlagueRumor(state: WorldState, tick: number): ActiveEvent
   };
   state.active_events.push(ev);
 
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     queueMessage(state, "otto", agent, "Word has reached the village: plague spotted in a nearby town. Stock up on medicine if you can.", tick);
   }
   return ev;
@@ -259,7 +267,7 @@ export function triggerBanditThreat(state: WorldState, tick: number): ActiveEven
   };
   state.active_events.push(ev);
 
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     queueMessage(state, "otto", agent, "Bandits have been spotted on the roads near Brunnfeld. Keep your valuables safe.", tick);
   }
   return ev;
@@ -318,11 +326,11 @@ export function triggerMeeting(
     calledAtTick: tick,
   };
   // Teleport all agents to Town Hall so the meeting has quorum
-  for (const a of AGENT_NAMES) {
+  for (const a of getAgentNames()) {
     state.agent_locations[a] = "Town Hall";
   }
   const noticeText = `Otto has called an emergency village meeting: "${description}". Everyone to the Town Hall immediately!`;
-  for (const a of AGENT_NAMES) feedbackToAgent(a, state, noticeText);
+  for (const a of getAgentNames()) feedbackToAgent(a, state, noticeText);
   console.log(`  🏛 [God Mode] Emergency meeting scheduled for tick ${scheduledTick} (current_tick on disk: ${tick}). All agents teleported to Town Hall.`);
 }
 
@@ -338,7 +346,7 @@ export async function runInterview(
   const memory = readAgentMemory(agent);
   const eco = state.economics[agent];
   const body = state.body[agent];
-  const name = AGENT_DISPLAY_NAMES[agent];
+  const name = getDisplayName(agent);
 
   const prompt = `You are ${name}, a villager in Brunnfeld.
 ${profile}

@@ -1,5 +1,5 @@
 import type { AgentName, AgentTurnResult, ItemType, Skill, WorldState, SimTime } from "./types.js";
-import { AGENT_NAMES } from "./types.js";
+import { getAgentNames, getLocationType } from "./world-registry.js";
 import { getInventoryQty, removeFromInventory, addToInventory, feedbackToAgent } from "./inventory.js";
 import { getSeasonMultiplier } from "./seasons.js";
 import { getEventProductionMultiplier } from "./god-mode.js";
@@ -42,7 +42,7 @@ export const MULTI_FARM_ITEMS: Partial<Record<string, string[]>> = {
 };
 
 function getHiredLaborer(employer: AgentName, state: WorldState): AgentName | null {
-  for (const a of AGENT_NAMES) {
+  for (const a of getAgentNames()) {
     if (state.economics[a].hiredBy === employer) return a;
   }
   return null;
@@ -80,7 +80,11 @@ export function resolveProduction(
 
       const currentLocation = state.agent_locations[agent];
       const validLocations = MULTI_FARM_ITEMS[itemKey] ?? [recipe.location];
-      if (!validLocations.includes(currentLocation)) {
+      const currentLocType = getLocationType(currentLocation);
+      const atValidLocation = validLocations.includes(currentLocation) ||
+        (currentLocType != null &&
+         validLocations.some(vl => getLocationType(vl) === currentLocType));
+      if (!atValidLocation) {
         feedbackToAgent(agent, state, `[Can't do that] You must be at ${recipe.location} to produce ${itemKey}.`);
         continue;
       }

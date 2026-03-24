@@ -1,12 +1,50 @@
 # Brunnfeld
 
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-compatible-orange)](https://openrouter.ai)
+
 ![Brunnfeld](cover.png)
 
 **A medieval village economy that runs itself.**
 
-19 LLM agents live in a 22-location village. They receive no behavioral instructions, no trading strategies, no economic goals. Each agent gets a short background — name, skill, home, starting goods — and a structured world that enforces physics: hunger, tool degradation, seasonal yields, locked doors, expiring orders, spoiling food, debt.
+Up to 1000 LLM agents live in a 22-location village. They receive no behavioral instructions, no trading strategies, no economic goals. Each agent gets a short background — name, skill, home, starting goods — and a structured world that enforces physics: hunger, tool degradation, seasonal yields, locked doors, expiring orders, spoiling food, debt.
 
 The agents produce interesting economic behavior because two things collide: what the LLM already knows about the world, and what the engine will actually allow. The LLM knows what a miller does. The engine enforces that only Gerda has the skill and the location. Neither alone produces what you see — pretraining without constraints is generic roleplay; constraints without pretraining is random noise. Together, they produce a miller who actually blocks bread production when she stops coming to market.
+
+**What makes it different:**
+
+- **No behavioral instructions** — agents receive only a structured world state, not goals or strategies
+- **Hard supply chains** — wheat → mill → flour → bakery → bread; one missing link halts production
+- **Real economics** — live order book, rolling price index, tool degradation, spoilage, seasonal yields, debt
+- **Village governance** — pressure accumulates in the elder's perception until he calls a meeting; council votes pass laws that take immediate effect
+- **Persistent memory** — each agent's markdown file is written by the engine and read back every turn
+- **Scalable** — generate worlds with up to 1000 agents across 5 villages via a single API call
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/marcopatzelt/brunnfeld
+cd brunnfeld
+npm install
+cp .env.example .env    # add OPENROUTER_API_KEY, or leave blank to use Claude CLI
+npm start               # streams live to http://localhost:3333
+```
+
+Reset to tick 1 at any time:
+
+```bash
+npm run reset && npm start
+```
+
+Full setup options (LLM backends, model recommendations, env vars) → [Setup](#setup)
+
+---
+
+> **The key insight**: LLM agents behave like the people they know how to be — millers mill, bakers bake — but without a physics layer those are just words. Brunnfeld's engine enforces that *only Gerda has the skill and the location*. Neither alone is interesting. Together they produce a miller who actually blocks bread production when she stops coming to market.
 
 ---
 
@@ -951,6 +989,19 @@ The LLM brings the rest: it knows what a miller does, what starvation feels like
 What you can't get from either alone: Hans paying Konrad 30 coin across two transactions, Konrad claiming no record of either payment, Hans threatening the village court. No pretraining pattern exists for that specific chain. It required the LLM's understanding of debt and fraud colliding with the engine's actual wallet ledger producing actual discrepancies. That's the demo.
 
 **The honest claim**: when you build a real economy around LLMs, they do economics. Not because they discover it from first principles. Because they already know what economics looks like, and now the consequences are real.
+
+---
+
+## Contributing
+
+The engine is intentionally small (~3K lines of TypeScript). Good areas to contribute:
+
+- New production recipes or seasonal events
+- Additional village archetypes (market town, mining camp, port)
+- Viewer improvements (trade graph, wealth chart, agent timeline)
+- New LLM backends or model configs
+
+Open an issue before large PRs — the design constraints are load-bearing.
 
 ---
 

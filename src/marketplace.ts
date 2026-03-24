@@ -1,7 +1,15 @@
 import type { AgentName, ItemType, Marketplace, Order, Trade, WorldState, SimTime } from "./types.js";
-import { AGENT_NAMES } from "./types.js";
+import { getAgentVillage } from "./world-registry.js";
 import { addToInventory, removeFromInventory, unreserveInventory, feedbackToAgent } from "./inventory.js";
 import { emitSSE } from "./events.js";
+
+// ─── Per-village marketplace access ──────────────────────────
+
+export function getAgentMarketplace(agent: string, state: WorldState): Marketplace {
+  const vid = state.economics[agent]?.villageId ?? getAgentVillage(agent);
+  if (state.marketplaces) return state.marketplaces[vid] ?? state.marketplace;
+  return state.marketplace;
+}
 
 let _tradeIdCounter = 1;
 
@@ -65,8 +73,9 @@ export function executeTrade(
     }
   }
 
-  // Update price index
-  updatePriceIndex(state.marketplace, item, pricePerUnit);
+  // Update price index for the seller's village marketplace
+  const mkt = getAgentMarketplace(seller, state);
+  updatePriceIndex(mkt, item, pricePerUnit);
 
   const trade: Trade = {
     id: generateTradeId(),
@@ -79,9 +88,9 @@ export function executeTrade(
     total,
   };
 
-  state.marketplace.history.push(trade);
-  if (state.marketplace.history.length > 100) {
-    state.marketplace.history.shift();
+  mkt.history.push(trade);
+  if (mkt.history.length > 100) {
+    mkt.history.shift();
   }
 
   return trade;
@@ -89,8 +98,8 @@ export function executeTrade(
 
 // Returns orders most relevant to this agent (their own + items they produce or need)
 export function getRelevantOrders(agent: AgentName, state: WorldState): Order[] {
-  const eco = state.economics[agent];
-  const orders = state.marketplace.orders.filter(o => o.expiresAtTick > state.current_tick);
+  const mkt = getAgentMarketplace(agent, state);
+  const orders = mkt.orders.filter(o => o.expiresAtTick > state.current_tick);
 
   // Show: own orders + buy orders for items they produce + sell orders for items they need
   return orders.filter(o =>
@@ -101,15 +110,22 @@ export function getRelevantOrders(agent: AgentName, state: WorldState): Order[] 
 }
 
 export function expireOrders(state: WorldState, time: SimTime): void {
-  const expired = state.marketplace.orders.filter(o => o.expiresAtTick <= time.tick);
-  for (const order of expired) {
-    if (order.type === "sell") {
-      unreserveInventory(order.agentId, order.item, order.quantity, state);
-      feedbackToAgent(order.agentId, state, `Your sell order for ${order.quantity} ${order.item} expired.`);
+  // Expire orders in all marketplaces (single-village or multi-village)
+  const marketplaces = state.marketplaces
+    ? Object.values(state.marketplaces)
+    : [state.marketplace];
+
+  for (const mkt of marketplaces) {
+    const expired = mkt.orders.filter(o => o.expiresAtTick <= time.tick);
+    for (const order of expired) {
+      if (order.type === "sell") {
+        unreserveInventory(order.agentId, order.item, order.quantity, state);
+        feedbackToAgent(order.agentId, state, `Your sell order for ${order.quantity} ${order.item} expired.`);
+      }
+      emitSSE("order:expired", { orderId: order.id, agentId: order.agentId, orderType: order.type, item: order.item, quantity: order.quantity, price: order.price });
     }
-    emitSSE("order:expired", { orderId: order.id, agentId: order.agentId, orderType: order.type, item: order.item, quantity: order.quantity, price: order.price });
+    mkt.orders = mkt.orders.filter(o => o.expiresAtTick > time.tick);
   }
-  state.marketplace.orders = state.marketplace.orders.filter(o => o.expiresAtTick > time.tick);
 }
 
 export function getAgentOrders(agent: AgentName, marketplace: Marketplace): Order[] {

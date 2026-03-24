@@ -1,12 +1,13 @@
 // Frontend-mirrored types (slim subset of backend types.ts)
 
-export type AgentName =
-  | "hans" | "ida" | "konrad" | "ulrich" | "bertram"
-  | "gerda" | "anselm" | "volker" | "wulf"
-  | "liesel" | "sybille" | "friedrich"
-  | "otto" | "pater_markus"
-  | "dieter" | "magda" | "heinrich" | "elke" | "rupert"
-  | "player";
+// Widened to string to support dynamically generated multi-village worlds.
+export type AgentName = string;
+
+export interface VillageInfo {
+  id: string;
+  name: string;
+  agentCount: number;
+}
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export type ItemType = string;

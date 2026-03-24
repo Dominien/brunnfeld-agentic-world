@@ -1,6 +1,6 @@
 import type { AgentAction, AgentName, ItemType, Loan, ResolvedAction, WorldState, SimTime, StealRecord } from "./types.js";
-import { AGENT_DISPLAY_NAMES, AGENT_NAMES } from "./types.js";
-import { LOCATIONS, isValidLocation, isLocationOpen, OPENING_HOURS } from "./village-map.js";
+import { getAgentNames, getDisplayName, getAgentVillage, isValidLocation, getLocationHours, isLocationOpenByRegistry, getVillageLocations, getVillages, resolveAgentLocation } from "./world-registry.js";
+import { getAgentMarketplace } from "./marketplace.js";
 import { getHourIndex } from "./time.js";
 import { lockDoor, unlockDoor, resolveKnock } from "./doors.js";
 import { queueMessage } from "./messages.js";
@@ -74,11 +74,11 @@ export function resolveAction(
   context: ResolveContext,
 ): ResolvedAction {
   const { agent, agentLocation, state, time } = context;
-  const name = AGENT_DISPLAY_NAMES[agent];
+  const name = getDisplayName(agent);
 
   switch (action.type) {
     case "speak": {
-      const othersHere = AGENT_NAMES.filter(
+      const othersHere = Object.keys(state.agent_locations).filter(
         a => a !== agent && state.agent_locations[a] === agentLocation
       );
       if (othersHere.length === 0) {
@@ -89,24 +89,30 @@ export function resolveAction(
     }
 
     case "think":
-      return { ...action, result: `[Thought] ${action.text}`, visible: false };
+      return { ...action, result: action.text ? `[Thought] ${action.text}` : "", visible: false };
 
     case "wait":
       return { ...action, result: "", visible: false };
 
     case "move_to": {
-      const targetLoc = action.location || action.text || "";
+      const rawLoc = action.location || action.text || "";
+      const targetLoc = resolveAgentLocation(agent, rawLoc);
       const valid = isValidLocation(targetLoc);
       if (!valid) {
-        return { ...action, result: `[Can't do that] "${targetLoc}" is not a valid location. Available: ${[...LOCATIONS].join(", ")}`, visible: false };
+        const vid = getAgentVillage(agent);
+        const vName = getVillages().find(v => v.id === vid)?.name ?? "";
+        const localLocs = getVillageLocations(vid).map(l =>
+          vName && l.startsWith(`${vName}:`) ? l.slice(vName.length + 1) : l
+        );
+        return { ...action, result: `[Can't do that] "${rawLoc}" is not a valid location. Try: ${localLocs.join(", ")}`, visible: false };
       }
       const eventBlock = isLocationBlockedByEvent(targetLoc, state.active_events);
       if (eventBlock) {
         return { ...action, result: eventBlock, visible: false };
       }
       const hourIdx = getHourIndex(time);
-      if (!isLocationOpen(targetLoc, hourIdx)) {
-        const hrs = OPENING_HOURS[targetLoc];
+      if (!isLocationOpenByRegistry(targetLoc, hourIdx)) {
+        const hrs = getLocationHours(targetLoc);
         const opensStr = hrs != null ? ` (opens at ${String(6 + hrs.open).padStart(2, "0")}:00)` : "";
         return { ...action, result: `[Can't move] ${targetLoc} is closed right now${opensStr}.`, visible: false };
       }
@@ -132,15 +138,15 @@ export function resolveAction(
 
     case "send_message": {
       const targetName = (action.to ?? action.target ?? "").toLowerCase();
-      const targetAgent = AGENT_NAMES.find(
-        a => AGENT_DISPLAY_NAMES[a].toLowerCase() === targetName
+      const targetAgent = getAgentNames().find(
+        a => getDisplayName(a).toLowerCase() === targetName
       );
       if (!targetAgent) {
         return { ...action, result: `[Can't do that] Nobody named "${action.to ?? action.target}" lives in the village.`, visible: false };
       }
       const msgText = action.text ?? "(no message)";
       queueMessage(state, agent, targetAgent, msgText, time.tick);
-      return { ...action, result: `Message sent to ${AGENT_DISPLAY_NAMES[targetAgent]}.`, visible: false };
+      return { ...action, result: `Message sent to ${getDisplayName(targetAgent)}.`, visible: false };
     }
 
     case "leave_note": {
@@ -215,7 +221,7 @@ export function resolveAction(
         postedTick: time.tick,
         expiresAtTick: time.tick + 16,
       };
-      addOrder(state.marketplace, newOrder);
+      addOrder(getAgentMarketplace(agent, state), newOrder);
       emitSSE("order:posted", { orderId: newOrder.id, agentId: agent, orderType: orderSide, item, quantity, price });
       feedbackToAgent(agent, state, `Posted ${orderSide.toUpperCase()} order: ${quantity} ${item} at ${price} coin each. Order ID: ${newOrder.id} (expires in 16 ticks). Use cancel_order with this ID to cancel it.`);
       return { ...action, result: `Posted ${orderSide.toUpperCase()} order: ${quantity} ${item} at ${price} coin each. Order ID: ${newOrder.id}.`, visible: false };
@@ -228,7 +234,8 @@ export function resolveAction(
         return { ...action, result: "[Can't do that] cancel_order requires order_id.", visible: false };
       }
 
-      const order = state.marketplace.orders.find(o => o.id === orderId && o.agentId === agent);
+      const agentMkt = getAgentMarketplace(agent, state);
+      const order = agentMkt.orders.find(o => o.id === orderId && o.agentId === agent);
       if (!order) {
         feedbackToAgent(agent, state, `[Can't do that] No order ${orderId} found for you.`);
         return { ...action, result: `[Can't do that] No order ${orderId} found for you.`, visible: false };
@@ -240,7 +247,7 @@ export function resolveAction(
         if (found) found.reserved = Math.max(0, (found.reserved ?? 0) - order.quantity);
       }
 
-      removeOrder(state.marketplace, orderId);
+      removeOrder(agentMkt, orderId);
       emitSSE("order:cancelled", { orderId, agentId: agent, orderType: order.type, item: order.item, quantity: order.quantity, price: order.price });
       feedbackToAgent(agent, state, `Cancelled ${order.type.toUpperCase()} order for ${order.item} x${order.quantity} at ${order.price}c (id: ${orderId}).`);
       return { ...action, result: `Cancelled ${order.type.toUpperCase()} order for ${order.item} x${order.quantity} at ${order.price}c.`, visible: false };
@@ -254,18 +261,21 @@ export function resolveAction(
         return { ...action, result: "[Can't do that] buy_item requires item and max_price.", visible: false };
       }
       const currentLoc = state.agent_locations[agent];
-      if (currentLoc !== "Village Square" && currentLoc !== "Marketplace") {
+      // Allow buying at any "square"-type location (covers "Village Square", "Norddorf:Village Square", etc.)
+      const atSquare = currentLoc === "Village Square" || currentLoc === "Marketplace" || currentLoc.endsWith(":Village Square");
+      if (!atSquare) {
         return { ...action, result: "[Can't do that] You must be at the Village Square to buy.", visible: false };
       }
-      const matches = state.marketplace.orders
+      const buyMkt = getAgentMarketplace(agent, state);
+      const matches = buyMkt.orders
         .filter(o => o.type === "sell" && o.item === item && o.price <= maxPrice && o.agentId !== agent)
         .sort((a, b) => a.price - b.price);
       if (matches.length === 0) {
-        const allOrders = state.marketplace.orders
+        const allOrders = buyMkt.orders
           .filter(o => o.type === "sell" && o.item === item && o.agentId !== agent)
           .sort((a, b) => a.price - b.price);
         const cheapestNote = allOrders.length > 0
-          ? ` Cheapest available: ${allOrders[0]!.price}c from ${AGENT_DISPLAY_NAMES[allOrders[0]!.agentId as AgentName] ?? allOrders[0]!.agentId}. Raise your max_price.`
+          ? ` Cheapest available: ${allOrders[0]!.price}c from ${getDisplayName(allOrders[0]!.agentId)}. Raise your max_price.`
           : " No sell orders exist for this item.";
         return { ...action, result: `[No match] No sell orders for ${item} at or below ${maxPrice} coin.${cheapestNote}`, visible: false };
       }
@@ -279,7 +289,7 @@ export function resolveAction(
       if (buyQuantity < order.quantity) {
         order.quantity -= buyQuantity;
       } else {
-        removeOrder(state.marketplace, order.id);
+        removeOrder(buyMkt, order.id);
       }
       feedbackToAgent(order.agentId, state, `Sold ${trade.quantity} ${trade.item} to ${name} for ${trade.total} coin.`);
       return { ...action, result: `${name} bought ${trade.quantity} ${trade.item} for ${trade.total} coin.`, visible: true };
@@ -295,8 +305,8 @@ export function resolveAction(
 
     case "hire": {
       const targetName = (action.target ?? "").toLowerCase();
-      const targetAgent = AGENT_NAMES.find(
-        a => AGENT_DISPLAY_NAMES[a].toLowerCase() === targetName
+      const targetAgent = getAgentNames().find(
+        a => getDisplayName(a).toLowerCase() === targetName
       );
       if (!targetAgent) {
         return { ...action, result: `[Can't do that] Nobody named "${action.target}" is available.`, visible: false };
@@ -308,18 +318,18 @@ export function resolveAction(
       }
       const targetEco = state.economics[targetAgent];
       if (targetEco.hiredBy) {
-        return { ...action, result: `[Can't do that] ${AGENT_DISPLAY_NAMES[targetAgent]} is already hired by someone.`, visible: false };
+        return { ...action, result: `[Can't do that] ${getDisplayName(targetAgent)} is already hired by someone.`, visible: false };
       }
       targetEco.hiredBy = agent;
       targetEco.hiredUntilTick = time.tick + 16;
       // Wage paid at end of day in engine
       feedbackToAgent(targetAgent, state, `${name} hired you for the day (${wage} coin). Task: ${action.task ?? "help with work"}.`);
-      return { ...action, result: `${name} hired ${AGENT_DISPLAY_NAMES[targetAgent]} for ${wage} coin.`, visible: true };
+      return { ...action, result: `${name} hired ${getDisplayName(targetAgent)} for ${wage} coin.`, visible: true };
     }
 
     case "lend_coin": {
       const targetName = (action.to ?? "").toLowerCase();
-      const targetAgent = AGENT_NAMES.find(a => AGENT_DISPLAY_NAMES[a].toLowerCase() === targetName);
+      const targetAgent = getAgentNames().find(a => getDisplayName(a).toLowerCase() === targetName);
       if (!targetAgent) {
         return { ...action, result: `[Can't do that] Nobody named "${action.to}" in the village.`, visible: false };
       }
@@ -345,12 +355,12 @@ export function resolveAction(
       };
       state.loans.push(loan);
       feedbackToAgent(targetAgent, state, `${name} lent you ${amount} coin (loan id: ${loan.id}, due in 7 days).`);
-      return { ...action, result: `${name} lent ${amount} coin to ${AGENT_DISPLAY_NAMES[targetAgent]}. Loan recorded (id: ${loan.id}).`, visible: true };
+      return { ...action, result: `${name} lent ${amount} coin to ${getDisplayName(targetAgent)}. Loan recorded (id: ${loan.id}).`, visible: true };
     }
 
     case "give_coin": {
       const targetName = (action.to ?? "").toLowerCase();
-      const targetAgent = AGENT_NAMES.find(a => AGENT_DISPLAY_NAMES[a].toLowerCase() === targetName);
+      const targetAgent = getAgentNames().find(a => getDisplayName(a).toLowerCase() === targetName);
       if (!targetAgent) {
         return { ...action, result: `[Can't do that] Nobody named "${action.to}" in the village.`, visible: false };
       }
@@ -365,19 +375,19 @@ export function resolveAction(
       eco.wallet -= amount;
       state.economics[targetAgent].wallet += amount;
       feedbackToAgent(targetAgent, state, `${name} gave you ${amount} coin.`);
-      return { ...action, result: `${name} gave ${amount} coin to ${AGENT_DISPLAY_NAMES[targetAgent]}.`, visible: true };
+      return { ...action, result: `${name} gave ${amount} coin to ${getDisplayName(targetAgent)}.`, visible: true };
     }
 
     case "steal": {
       const targetName = (action.target ?? "").toLowerCase();
-      const targetAgent = AGENT_NAMES.find(
-        a => AGENT_DISPLAY_NAMES[a].toLowerCase() === targetName
+      const targetAgent = getAgentNames().find(
+        a => getDisplayName(a).toLowerCase() === targetName
       );
       if (!targetAgent) {
         return { ...action, result: `[Can't do that] Nobody named "${action.target}" is here.`, visible: false };
       }
       if (state.agent_locations[targetAgent] !== agentLocation) {
-        return { ...action, result: `[Can't do that] ${AGENT_DISPLAY_NAMES[targetAgent]} is not here.`, visible: false };
+        return { ...action, result: `[Can't do that] ${getDisplayName(targetAgent)} is not here.`, visible: false };
       }
       const stealItem = action.item as ItemType | undefined;
       if (!stealItem) {
@@ -386,11 +396,11 @@ export function resolveAction(
       const victimInv = state.economics[targetAgent].inventory;
       const available = getInventoryQty(victimInv, stealItem);
       if (available < 1) {
-        return { ...action, result: `[Can't do that] ${AGENT_DISPLAY_NAMES[targetAgent]} does not have any ${stealItem}.`, visible: false };
+        return { ...action, result: `[Can't do that] ${getDisplayName(targetAgent)} does not have any ${stealItem}.`, visible: false };
       }
 
       // Count witnesses (everyone at location except thief and target)
-      const witnesses = AGENT_NAMES.filter(
+      const witnesses = Object.keys(state.agent_locations).filter(
         a => a !== agent && a !== targetAgent && state.agent_locations[a] === agentLocation
       ).length;
 
@@ -401,7 +411,7 @@ export function resolveAction(
 
       if (!state.caughtStealing) state.caughtStealing = {};
 
-      const victimDisplayName = AGENT_DISPLAY_NAMES[targetAgent];
+      const victimDisplayName = getDisplayName(targetAgent);
 
       if (success) {
         unreserveInventory(targetAgent, stealItem, 1, state);
@@ -447,7 +457,7 @@ export function resolveAction(
         calledAtTick: time.tick,
       };
       const noticeText = `Otto has called a village meeting: "${agendaDesc}". It will be held at the Town Hall at dawn on day ${Math.ceil(nextDawnTick / 16)}. Attend if you wish to participate.`;
-      for (const a of AGENT_NAMES) {
+      for (const a of getAgentNames()) {
         feedbackToAgent(a, state, noticeText);
       }
       return { ...action, result: `Otto calls a village meeting on "${agendaDesc}" — scheduled for dawn of day ${Math.ceil(nextDawnTick / 16)} at the Town Hall.`, visible: true };
