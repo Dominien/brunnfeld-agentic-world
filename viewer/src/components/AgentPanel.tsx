@@ -77,9 +77,13 @@ function EnergyBar({ value }: { value: number }) {
 const STATUS_ORDER = { starving: 0, sick: 1, hungry: 2, ok: 3, dead: 4 };
 
 function AgentList() {
-  const world         = useVillageStore((s) => s.world);
-  const selectAgent   = useVillageStore((s) => s.selectAgent);
-  const playerCreated = useVillageStore((s) => s.playerCreated);
+  const world           = useVillageStore((s) => s.world);
+  const selectAgent     = useVillageStore((s) => s.selectAgent);
+  const playerCreated   = useVillageStore((s) => s.playerCreated);
+  const activeVillageId = useVillageStore((s) => s.activeVillageId);
+  const villages        = useVillageStore((s) => s.villages);
+  const setActiveVillage = useVillageStore((s) => s.setActiveVillageId);
+  const [search, setSearch] = useState("");
 
   if (!world) {
     return (
@@ -94,16 +98,29 @@ function AgentList() {
     );
   }
 
-  const agents = useMemo(() =>
-    (Object.keys(world.economics) as AgentName[])
-    .filter(a => a !== "player" || playerCreated)
-    .slice().sort((a, b) => {
-      const bodyA = world.body[a];
-      const bodyB = world.body[b];
-      const sa = bodyA ? STATUS_ORDER[getStatusBucket(bodyA)] : 5;
-      const sb = bodyB ? STATUS_ORDER[getStatusBucket(bodyB)] : 5;
-      return sa !== sb ? sa - sb : (AGENT_DISPLAY[a] ?? a).localeCompare(AGENT_DISPLAY[b] ?? b);
-    }), [world?.economics, world?.body]);
+  const activeVillageName = villages.find(v => v.id === activeVillageId)?.name ?? "Brunnfeld";
+
+  const agents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (Object.keys(world.economics) as AgentName[])
+      .filter(a => {
+        if (a === "player" && !playerCreated) return false;
+        // Village filter: match by villageId or fallback for brunnfeld
+        const eco = world.economics[a];
+        const vid = (eco as { villageId?: string }).villageId ?? "brunnfeld";
+        if (vid !== activeVillageId) return false;
+        // Search filter
+        if (q && !AGENT_DISPLAY[a].toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .slice().sort((a, b) => {
+        const bodyA = world.body[a];
+        const bodyB = world.body[b];
+        const sa = bodyA ? STATUS_ORDER[getStatusBucket(bodyA)] : 5;
+        const sb = bodyB ? STATUS_ORDER[getStatusBucket(bodyB)] : 5;
+        return sa !== sb ? sa - sb : (AGENT_DISPLAY[a] ?? a).localeCompare(AGENT_DISPLAY[b] ?? b);
+      });
+  }, [world?.economics, world?.body, activeVillageId, search, playerCreated]);
 
   return (
     <div style={{
@@ -116,13 +133,46 @@ function AgentList() {
         padding: "8px 12px", borderBottom: "1px solid #4a3010", flexShrink: 0,
         background: "linear-gradient(to bottom, #1a1008, #100c04)",
       }}>
-        <div style={{ fontSize: 13, fontWeight: "bold", color: "#f8e060", letterSpacing: 0.5 }}>
-          Brunnfeld
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: "bold", color: "#f8e060", letterSpacing: 0.5, flex: 1 }}>
+            {activeVillageName}
+          </div>
+          {villages.length > 1 && (
+            <select
+              value={activeVillageId}
+              onChange={e => setActiveVillage(e.target.value)}
+              style={{
+                background: "#1a1008", border: "1px solid #4a3010", color: "#c0a040",
+                fontSize: 10, borderRadius: 3, padding: "2px 4px", fontFamily: "Georgia, serif",
+              }}
+            >
+              {villages.map(v => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          )}
         </div>
         <div style={{ fontSize: 9, color: "#5a3820", marginTop: 2 }}>
           Tick {world.current_tick} · {world.current_time} · {world.season}, day {world.day_of_season}/7
         </div>
       </div>
+
+      {/* Search (shown when many agents) */}
+      {agents.length > 12 || search ? (
+        <div style={{ padding: "6px 10px", borderBottom: "1px solid #3a2808", flexShrink: 0 }}>
+          <input
+            type="text"
+            placeholder="Search agents…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              width: "100%", background: "#120e06", border: "1px solid #4a3010",
+              color: "#c8a860", fontFamily: "Georgia, serif", fontSize: 11,
+              padding: "4px 8px", borderRadius: 3, boxSizing: "border-box",
+            }}
+          />
+        </div>
+      ) : null}
 
       {/* Agent rows */}
       <div style={{ flex: 1, overflowY: "auto" }}>

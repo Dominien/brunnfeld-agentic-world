@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { renderVillage, hitTestLocation, screenToWorld, spawnParticle, type Camera, type ActiveAnimation } from "../canvas/renderer";
-import { locationPx, TILE_SIZE, WORLD_W, WORLD_H } from "../canvas/map";
+import { locationPx, setActiveTiles, setActiveBuildings, buildingsFromVillage, TILE_SIZE, WORLD_W, WORLD_H } from "../canvas/map";
 import { useVillageStore, AGENT_DISPLAY } from "../store";
 import type { AgentName } from "../types";
 
@@ -15,6 +15,8 @@ export default function VillageMap() {
   const [hoveredLoc, setHoveredLoc] = useState<string | null>(null);
 
   const world = useVillageStore((s) => s.world);
+  const activeVillageId = useVillageStore((s) => s.activeVillageId);
+  const villages = useVillageStore((s) => s.villages);
   const selectedAgent = useVillageStore((s) => s.selectedAgent);
   const selectAgent = useVillageStore((s) => s.selectAgent);
   const feed = useVillageStore((s) => s.feed);
@@ -51,6 +53,18 @@ export default function VillageMap() {
     }
   }, [feed, world]);
 
+  // Apply village-specific tile/building data when active village changes
+  useEffect(() => {
+    const v = villages.find(v => v.id === activeVillageId);
+    if (v?.locationTiles && Object.keys(v.locationTiles).length > 0) {
+      setActiveTiles(v.locationTiles);
+      setActiveBuildings(buildingsFromVillage(v.locationTiles, v.locationTypes ?? {}));
+    } else {
+      setActiveTiles(null);     // fall back to hardcoded Brunnfeld defaults
+      setActiveBuildings(null);
+    }
+  }, [activeVillageId, villages]);
+
   // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -67,10 +81,14 @@ export default function VillageMap() {
       }
       ctx.clearRect(0, 0, w, h);
 
-      // Drain pending animations from store
+      // Drain pending animations from store — only track agents of the active village
       const store = useVillageStore.getState();
+      const currentWorld = store.world;
+      const currentVillageId = store.activeVillageId;
       const newAnims = store.consumeAnimations();
       for (const anim of newAnims) {
+        const agentVid = (currentWorld?.economics[anim.agent] as { villageId?: string } | undefined)?.villageId ?? "brunnfeld";
+        if (agentVid !== currentVillageId) continue;
         const from = locationPx(anim.fromLoc);
         const to = locationPx(anim.toLoc);
         const toX = to.x + TILE_SIZE / 2;
@@ -91,7 +109,17 @@ export default function VillageMap() {
         });
       }
 
-      renderVillage(ctx, world ?? null, cameraRef.current, selectedAgent, hoveredLoc, w, h, animationsRef.current);
+      // Filter world to active village's agents only
+      const filteredWorld = currentWorld ? {
+        ...currentWorld,
+        agent_locations: Object.fromEntries(
+          Object.entries(currentWorld.agent_locations).filter(([a]) =>
+            ((currentWorld.economics[a] as { villageId?: string })?.villageId ?? "brunnfeld") === currentVillageId
+          )
+        ),
+      } : null;
+
+      renderVillage(ctx, filteredWorld, cameraRef.current, selectedAgent, hoveredLoc, w, h, animationsRef.current);
 
       const now = performance.now();
       for (const [agent, anim] of animationsRef.current) {
@@ -182,7 +210,8 @@ export default function VillageMap() {
     const loc = hitTestLocation(wc.x, wc.y);
     if (loc && world) {
       const agents = Object.entries(world.agent_locations)
-        .filter(([, l]) => l === loc).map(([a]) => a as AgentName);
+        .filter(([a, l]) => l === loc && ((world.economics[a] as { villageId?: string })?.villageId ?? "brunnfeld") === activeVillageId)
+        .map(([a]) => a as AgentName);
       // When caravan is active, the Gipsy sprite at Merchant Camp IS Otto —
       // select him regardless of where the frontend thinks he is
       if (loc === "Merchant Camp" && world.active_events?.some(e => e.type === "caravan")) {
@@ -237,7 +266,7 @@ export default function VillageMap() {
           {hoveredLoc}
           {world && (() => {
             const here = Object.entries(world.agent_locations)
-              .filter(([, l]) => l === hoveredLoc)
+              .filter(([a, l]) => l === hoveredLoc && ((world.economics[a] as { villageId?: string })?.villageId ?? "brunnfeld") === activeVillageId)
               .map(([a]) => AGENT_DISPLAY[a as AgentName]);
             return here.length > 0 ? ` — ${here.join(", ")}` : "";
           })()}

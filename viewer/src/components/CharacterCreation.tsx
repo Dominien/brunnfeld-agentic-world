@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useVillageStore } from "../store";
+import ScaleSelector from "./ScaleSelector";
 
 const SKILLS = [
   { id: "farmer",     label: "Farmer",     desc: "20c | grows wheat, vegetables, eggs",     start: "Farm 1" },
@@ -30,12 +31,17 @@ const inputStyle: React.CSSProperties = {
 
 export default function CharacterCreation() {
   const setWatchMode = useVillageStore(s => s.setWatchMode);
+  const world = useVillageStore(s => s.world);
+  const villages = useVillageStore(s => s.villages);
 
   const [name, setName] = useState("");
   const [skillId, setSkillId] = useState("farmer");
   const [location, setLocation] = useState("Farm 1");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showWorldConfig, setShowWorldConfig] = useState(false);
+
+  const isFreshStart = !world || world.current_tick === 0;
 
   const selectedSkill = SKILLS.find(s => s.id === skillId);
 
@@ -59,7 +65,9 @@ export default function CharacterCreation() {
       if (!res.ok) {
         const data = await res.json();
         setError(data.error ?? "Failed to create character.");
+        return;
       }
+      await fetch("/api/start", { method: "POST" });
     } catch {
       setError("Server unreachable.");
     } finally {
@@ -67,12 +75,16 @@ export default function CharacterCreation() {
     }
   }
 
+  const villageName = villages[0]?.name ?? "Brunnfeld";
+  const totalAgents = villages.reduce((n, v) => n + v.agentCount, 0);
+
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 1000,
       background: "rgba(0,0,0,0.85)",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
+      {showWorldConfig && <ScaleSelector onWorldGenerated={() => setShowWorldConfig(false)} />}
       <form onSubmit={handleSubmit} style={{
         background: "rgba(12,8,4,0.97)",
         border: "2px solid #c89030",
@@ -83,11 +95,26 @@ export default function CharacterCreation() {
         color: "#e8d090",
       }}>
         <h2 style={{ margin: "0 0 6px", fontSize: 22, color: "#f0c040", textAlign: "center", letterSpacing: 1 }}>
-          Brunnfeld
+          {villageName}
         </h2>
-        <p style={{ margin: "0 0 24px", color: "#a08040", textAlign: "center", fontSize: 13 }}>
+        <p style={{ margin: "0 0 6px", color: "#a08040", textAlign: "center", fontSize: 13 }}>
           Create a character to join the economy — or just watch.
         </p>
+        {isFreshStart && (
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <button
+              type="button"
+              onClick={() => setShowWorldConfig(true)}
+              style={{
+                background: "rgba(20,14,6,0.9)", border: "1px solid #5a3c10",
+                borderRadius: 4, color: "#a07840", fontFamily: "Georgia, serif",
+                fontSize: 12, padding: "5px 14px", cursor: "pointer",
+              }}
+            >
+              🌍 {villages.length > 1 ? `${villages.length} villages · ${totalAgents} agents` : "Configure World…"}
+            </button>
+          </div>
+        )}
 
         <label style={{ display: "block", marginBottom: 16 }}>
           <span style={{ fontSize: 12, color: "#c0a060", display: "block", marginBottom: 4 }}>YOUR NAME</span>
@@ -152,7 +179,10 @@ export default function CharacterCreation() {
 
         <button
           type="button"
-          onClick={() => setWatchMode(true)}
+          onClick={async () => {
+            await fetch("/api/start", { method: "POST" });
+            setWatchMode(true);
+          }}
           style={{
             width: "100%",
             padding: "9px 0",

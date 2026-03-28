@@ -99,8 +99,82 @@ export function tilePx(tile: { tx: number; ty: number }): { x: number; y: number
   return { x: tile.tx * TILE_SIZE, y: tile.ty * TILE_SIZE };
 }
 
+// ─── Dynamic tile/building overrides for multi-village support ────────────
+
+let _activeTiles: Record<string, { tx: number; ty: number }> | null = null;
+let _activeBuildings: Record<string, { img: string; w: number; h: number; label?: string }> | null = null;
+
+export function setActiveTiles(tiles: Record<string, { tx: number; ty: number }> | null): void {
+  _activeTiles = tiles;
+}
+export function setActiveBuildings(b: Record<string, { img: string; w: number; h: number; label?: string }> | null): void {
+  _activeBuildings = b;
+}
+export function getActiveTiles(): Record<string, { tx: number; ty: number }> {
+  return _activeTiles ?? LOCATION_TILES;
+}
+export function getActiveBuildings(): Record<string, { img: string; w: number; h: number; label?: string }> {
+  return _activeBuildings ?? LOCATION_BUILDINGS;
+}
+
+/** Derive LOCATION_BUILDINGS-compatible data from world_config locationTiles + locationTypes. */
+export function buildingsFromVillage(
+  locationTiles: Record<string, { tx: number; ty: number }>,
+  locationTypes: Record<string, string>,
+): Record<string, { img: string; w: number; h: number; label?: string }> {
+  const result: Record<string, { img: string; w: number; h: number; label?: string }> = {};
+  for (const name of Object.keys(locationTiles)) {
+    const type = locationTypes[name] ?? inferLocationType(name);
+    result[name] = typeToBuilding(type, name);
+  }
+  return result;
+}
+
+function inferLocationType(name: string): string {
+  const l = name.toLowerCase();
+  if (l.startsWith("cottage")) return "cottage";
+  if (l.startsWith("farm")) return "farm";
+  if (l === "forest") return "forest";
+  if (l === "mine") return "mine";
+  if (l === "village square") return "square";
+  if (l === "town hall") return "townhall";
+  if (l === "elder's house" || l === "elders house") return "elder";
+  if (l === "prison") return "prison";
+  if (l === "mill") return "mill";
+  if (l === "forge") return "forge";
+  if (l === "bakery") return "bakery";
+  if (l === "tavern") return "tavern";
+  if (l === "carpenter shop") return "carpenter";
+  if (l === "healer's hut" || l === "healers hut") return "healer";
+  if (l === "seamstress cottage") return "seamstress";
+  if (l === "merchant camp") return "merchant";
+  return "cottage";
+}
+
+function typeToBuilding(type: string, label: string): { img: string; w: number; h: number; label: string } {
+  switch (type) {
+    case "farm":       return { img: "/assets/buildings/Archery.png",   w: 100, h: 133, label };
+    case "forge":
+    case "carpenter":  return { img: "/assets/buildings/Barracks.png",  w: 100, h: 133, label };
+    case "mill":
+    case "mine":
+    case "prison":     return { img: "/assets/buildings/Tower.png",     w: 64,  h: 128, label };
+    case "townhall":   return { img: "/assets/buildings/Monastery.png", w: 110, h: 183, label };
+    case "elder":      return { img: "/assets/buildings/Castle.png",    w: 130, h: 104, label };
+    case "tavern":
+    case "seamstress": return { img: "/assets/buildings/House3.png",    w: 80,  h: 120, label };
+    case "bakery":     return { img: "/assets/buildings/House2.png",    w: 80,  h: 120, label };
+    case "healer":     return { img: "/assets/buildings/House2.png",    w: 64,  h: 96,  label };
+    case "square":
+    case "forest":
+    case "merchant":   return { img: "", w: 0, h: 0, label };
+    case "cottage":
+    default:           return { img: "/assets/buildings/House1.png",    w: 64,  h: 96,  label };
+  }
+}
+
 export function locationPx(name: string): { x: number; y: number } {
-  const tile = LOCATION_TILES[name];
+  const tile = getActiveTiles()[name];
   if (!tile) return { x: 0, y: 0 };
   return tilePx(tile);
 }

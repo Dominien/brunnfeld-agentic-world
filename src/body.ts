@@ -1,5 +1,5 @@
 import type { AgentName, BodyState, ItemType, SimTime, WorldState } from "./types.js";
-import { AGENT_NAMES } from "./types.js";
+import { getAgentNames } from "./world-registry.js";
 import { getInventoryQty, removeFromInventory, feedbackToAgent } from "./inventory.js";
 
 // How much each food item reduces hunger
@@ -91,7 +91,7 @@ export function resolveEat(
 
 // Dawn auto-eat: if starving and has food, consume cheapest item
 export function applyDawnAutoEat(state: WorldState): void {
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const body = state.body[agent];
     if (body.hunger < 4) continue;
 
@@ -113,7 +113,7 @@ export function applyDawnAutoEat(state: WorldState): void {
 
 // Starvation: hunger === 5 for 3+ consecutive ticks → death (remove from sim)
 export function checkStarvation(state: WorldState, time: SimTime): void {
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const body = state.body[agent];
     if (isAgentDead(body)) continue;
     if (body.hunger < 5) {

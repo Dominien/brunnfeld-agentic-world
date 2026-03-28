@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useVillageStore } from "../store";
 import type { AgentName } from "../types";
+import ScaleSelector from "./ScaleSelector";
 
 const AGENDA_TYPES = [
   { id: "general_rule",      label: "General Rule" },
@@ -21,6 +22,7 @@ const EVENTS = [
 export default function GodModePanel() {
   const world = useVillageStore((s) => s.world);
   const [firing, setFiring] = useState<string | null>(null);
+  const [showScaleSelector, setShowScaleSelector] = useState(false);
   const [agendaType, setAgendaType] = useState("general_rule");
   const [agendaDesc, setAgendaDesc] = useState("");
   const [banishTarget, setBanishTarget] = useState("");
@@ -85,8 +87,27 @@ export default function GodModePanel() {
           Inject events into the simulation
         </div>
       </div>
+      {showScaleSelector && <ScaleSelector onWorldGenerated={() => setShowScaleSelector(false)} />}
 
       <div style={{ flex: 1, overflowY: "auto", padding: "10px 12px" }}>
+
+        {/* New World */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: "#c8a060", fontWeight: "bold", letterSpacing: 1, marginBottom: 6, textTransform: "uppercase" }}>
+            World
+          </div>
+          <button
+            onClick={() => setShowScaleSelector(true)}
+            style={{
+              width: "100%", padding: "7px 0",
+              background: "rgba(30,20,8,0.9)", border: "1px solid #5a3c10",
+              color: "#c09040", fontFamily: "Georgia, serif", fontSize: 12,
+              borderRadius: 4, cursor: "pointer",
+            }}
+          >
+            🌍 New World…
+          </button>
+        </div>
 
         {/* Active events */}
         {activeEvents.length > 0 && (

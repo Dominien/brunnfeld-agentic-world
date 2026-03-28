@@ -1,5 +1,5 @@
 import type { AgentName, AgentTurnResult, ItemType, Skill, WorldState, SimTime } from "./types.js";
-import { AGENT_NAMES } from "./types.js";
+import { getAgentNames, getLocationType } from "./world-registry.js";
 import { getInventoryQty, removeFromInventory, addToInventory, feedbackToAgent } from "./inventory.js";
 import { getSeasonMultiplier } from "./seasons.js";
 import { getEventProductionMultiplier } from "./god-mode.js";
@@ -41,8 +41,15 @@ export const MULTI_FARM_ITEMS: Partial<Record<string, string[]>> = {
   herbs:      ["Forest"],
 };
 
+/** Returns all producible items for a given skill with their input requirements and required location. */
+export function getProducibleItems(skill: string): { item: string; inputs: Record<string, number>; location: string }[] {
+  return Object.entries(RECIPES)
+    .filter(([, r]) => r.skill === skill)
+    .map(([item, r]) => ({ item, inputs: r.inputs as Record<string, number>, location: r.location }));
+}
+
 function getHiredLaborer(employer: AgentName, state: WorldState): AgentName | null {
-  for (const a of AGENT_NAMES) {
+  for (const a of getAgentNames()) {
     if (state.economics[a].hiredBy === employer) return a;
   }
   return null;
@@ -74,13 +81,21 @@ export function resolveProduction(
       }
 
       if (eco.skill !== recipe.skill) {
-        feedbackToAgent(agent, state, `[Can't do that] You don't have the ${recipe.skill} skill.`);
-        continue;
+        // Allow hired laborers to produce using their employer's skill
+        const employer = eco.hiredBy ? state.economics[eco.hiredBy] : null;
+        if (!employer || employer.skill !== recipe.skill) {
+          feedbackToAgent(agent, state, `[Can't do that] You don't have the ${recipe.skill} skill.`);
+          continue;
+        }
       }
 
       const currentLocation = state.agent_locations[agent];
       const validLocations = MULTI_FARM_ITEMS[itemKey] ?? [recipe.location];
-      if (!validLocations.includes(currentLocation)) {
+      const currentLocType = getLocationType(currentLocation);
+      const atValidLocation = validLocations.includes(currentLocation) ||
+        (currentLocType != null &&
+         validLocations.some(vl => getLocationType(vl) === currentLocType));
+      if (!atValidLocation) {
         feedbackToAgent(agent, state, `[Can't do that] You must be at ${recipe.location} to produce ${itemKey}.`);
         continue;
       }

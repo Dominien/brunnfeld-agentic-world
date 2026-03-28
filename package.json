@@ -1,7 +1,7 @@
 {
   "name": "brunnfeld",
   "version": "1.0.0",
-  "description": "Medieval village economy simulation built on the Hauswelt social engine",
+  "description": "Medieval village economy simulation — up to 1000 LLM agents across multiple villages, driven by supply chains, hunger, tool degradation and market pressure.",
   "license": "MIT",
   "type": "module",
   "scripts": {

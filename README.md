@@ -1,12 +1,52 @@
-# Brunnfeld
+# Brunnfeld 🌾
+
+![Brunnfeld Banner](banner.png)
+
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-compatible-orange)](https://openrouter.ai)
 
 ![Brunnfeld](cover.png)
 
 **A medieval village economy that runs itself.**
 
-19 LLM agents live in a 22-location village. They receive no behavioral instructions, no trading strategies, no economic goals. Each agent gets a short background — name, skill, home, starting goods — and a structured world that enforces physics: hunger, tool degradation, seasonal yields, locked doors, expiring orders, spoiling food, debt.
+Up to 1000 LLM agents live in a 22-location village. They receive no behavioral instructions, no trading strategies, no economic goals. Each agent gets a short background — name, skill, home, starting goods — and a structured world that enforces physics: hunger, tool degradation, seasonal yields, locked doors, expiring orders, spoiling food, debt.
 
 The agents produce interesting economic behavior because two things collide: what the LLM already knows about the world, and what the engine will actually allow. The LLM knows what a miller does. The engine enforces that only Gerda has the skill and the location. Neither alone produces what you see — pretraining without constraints is generic roleplay; constraints without pretraining is random noise. Together, they produce a miller who actually blocks bread production when she stops coming to market.
+
+**What makes it different:**
+
+- **No behavioral instructions** — agents receive only a structured world state, not goals or strategies
+- **Hard supply chains** — wheat → mill → flour → bakery → bread; one missing link halts production
+- **Real economics** — live order book, rolling price index, tool degradation, spoilage, seasonal yields, debt
+- **Village governance** — pressure accumulates in the elder's perception until he calls a meeting; council votes pass laws that take immediate effect
+- **Persistent memory** — each agent's markdown file is written by the engine and read back every turn
+- **Scalable** — generate worlds with up to 1000 agents across 5 villages via a single API call
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/marcopatzelt/brunnfeld
+cd brunnfeld
+npm install
+cp .env.example .env    # add OPENROUTER_API_KEY, or leave blank to use Claude CLI
+npm start               # streams live to http://localhost:3333
+```
+
+Reset to tick 1 at any time:
+
+```bash
+npm run reset && npm start
+```
+
+Full setup options (LLM backends, model recommendations, env vars) → [Setup](#setup)
+
+---
+
+> **The key insight**: LLM agents behave like the people they know how to be — millers mill, bakers bake — but without a physics layer those are just words. Brunnfeld's engine enforces that *only Gerda has the skill and the location*. Neither alone is interesting. Together they produce a miller who actually blocks bread production when she stops coming to market.
 
 ---
 
@@ -198,6 +238,76 @@ Key design decisions:
 
 ---
 
+## Agentic Harness Mode
+
+`USE_HARNESS=true` replaces the single-call decision loop with a **multi-call tool-use harness**. Instead of returning a full JSON actions array in one shot, each agent gets a budget of 3–8 tool calls per tick and works through them step by step — observing, thinking, then acting.
+
+This matches how Claude naturally reasons: see the situation, decide, do one thing, see the result, decide again.
+
+### Classic mode vs. Harness mode
+
+| | Classic | Harness |
+|---|---|---|
+| LLM calls per agent | 1 | 3–8 |
+| Agent sees action results | Next tick | Same tick |
+| Observation phase | None | Explicit tools |
+| Reaction to co-located agents | None | Round-robin yield |
+| Response format | `{"actions": [...]}` | `{"tool": "name", "args": {...}}` |
+
+### Budget
+
+Budget is assigned per tick based on agent state:
+
+| Condition | Budget |
+|---|---|
+| Energy ≤ 2 (exhausted) | 3 calls |
+| At Village Square / Marketplace | 8 calls |
+| Default | 5 calls |
+
+The prompt enforces "use at most 2 observation tools, then act."
+
+### Available Tools
+
+| Category | Tool | Args | Description |
+|---|---|---|---|
+| Observe | `look_around` | `{}` | Who is here, what's been said |
+| Observe | `check_inventory` | `{}` | Your inventory and wallet |
+| Observe | `check_prices` | `{"item": "flour"}` | Market prices for an item |
+| Observe | `check_body` | `{}` | Hunger, energy, health |
+| Observe | `recall` | `{"topic": "wheat trade"}` | Search your memory |
+| Observe | `assess_person` | `{"name": "Anselm"}` | What you know about someone (must be acquainted) |
+| Act | `speak` | `{"text": "..."}` | Say something aloud (max 15 words, others must be present) |
+| Act | `negotiate` | `{"agent":"Anselm","item":"flour","price":6,"qty":3}` | Structured trade offer |
+| Act | `produce` | `{"item": "flour"}` | Craft item at your work location |
+| Act | `move_to` | `{"location": "Village Square"}` | Move to a location |
+| Act | `post_order` | `{"side":"sell","item":"flour","qty":3,"price":6}` | Post a market order |
+| Act | `buy_item` | `{"item":"bread","max_price":5}` | Buy from market (must be at Village Square) |
+| Act | `eat` | `{"item":"bread","qty":1}` | Eat food from inventory |
+| Plan | `think` | `{"text": "..."}` | Inner thought — not heard by others |
+| Plan | `done` | `{}` | End your turn |
+
+### Prompt structure
+
+The harness splits the prompt for LLM cache efficiency:
+
+- **Static prefix** (built once per tick): agent identity + memory + tool list — cache hits ~75% of tokens
+- **Dynamic suffix** (rebuilt each call): remaining budget + action history so far
+
+### Round-robin interleaving
+
+Agents at the same location run in round-robin: each advances one tool call at a time. When an agent calls an interaction tool (`speak`, `negotiate`), the harness **yields** — other agents at that location can react before the original agent's next call. This means agents respond to what they actually hear in the current tick.
+
+### Enabling
+
+```env
+USE_HARNESS=true
+CHARACTER_MODEL=haiku    # or any OpenRouter model ID
+```
+
+> Harness mode uses 5–8× more LLM calls per tick. See [Performance & Scaling](#performance--scaling) for timing expectations.
+
+---
+
 ## The Village
 
 ```
@@ -229,6 +339,23 @@ Brunnfeld
 All trade happens at Village Square.
 Non-adjacent moves route through Village Square (2 ticks).
 ```
+
+### Multi-Village Worlds
+
+Brunnfeld supports multiple villages connected by named roads. Each village has its own location namespace, agents, and order book.
+
+```
+Brunnfeld ──── Road: Brunnfeld→Norddorf ──── Norddorf
+```
+
+Villages are generated with the `generate-world` script (see [World Generation](#world-generation)). A Norddorf agent's locations are prefixed: `Norddorf:Village Square`, `Norddorf:Bakery`, etc. Cross-village teleportation is blocked — agents must route through the road. If an agent tries to move directly to another village's location, the engine returns their local equivalent:
+
+```
+[Can't go there] "Village Square" is in another village.
+Your local equivalent is "Norddorf:Village Square" — go there instead.
+```
+
+Cross-village trade is possible: an agent can travel to the other village's marketplace and post orders there.
 
 ### The 19 Agents
 
@@ -712,15 +839,92 @@ To use free models, go to [openrouter.ai/settings/privacy](https://openrouter.ai
 | `npm run server` | Start HTTP server only (viewer, no simulation) |
 | `npm run typecheck` | TypeScript check |
 
+### World Generation
+
+Generate a custom world configuration (overwrites `data/world_config.json`):
+
+```bash
+node dist/generate-world.js --villages=2 --agents=30 --seed=42
+npm run reset && npm start
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--villages` | `1` | Number of villages (1–5) |
+| `--agents` | `19` | Total agents distributed across villages |
+| `--seed` | random | Integer seed for deterministic generation |
+
+Generated agents are assigned names from a pool of ~300 medieval German names and get procedurally generated profiles (skill, home, starting coin, one-paragraph background).
+
 ### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENROUTER_API_KEY` | — | If set, enables OpenRouter backend with live streaming |
-| `CHARACTER_MODEL` | `haiku` | Model for village agents. Any OpenRouter model ID or `haiku`/`sonnet`/`opus` for CLI |
+| `CHARACTER_MODEL` | `haiku` | Model tier for agents: `haiku` / `sonnet` / `opus` (CLI) or any OpenRouter model ID |
 | `INTERVIEW_MODEL` | `haiku` | Model for the agent interview endpoint |
-| `CLAUDE_CONCURRENCY` | `4` | Max parallel LLM calls |
+| `USE_HARNESS` | `false` | Enable agentic harness mode (multi-call tool loop per agent) |
+| `OPENROUTER_MODEL` | — | Override all tiers with one OpenRouter model ID (e.g. `deepseek/deepseek-v3.2`) |
+| `OPENROUTER_MODEL_HAIKU` | — | OpenRouter model for haiku-tier calls only |
+| `OPENROUTER_MODEL_SONNET` | — | OpenRouter model for sonnet-tier calls only |
+| `OPENROUTER_MODEL_OPUS` | — | OpenRouter model for opus-tier calls only |
+| `LOCAL_LLM_BASE_URL` | — | Enable local LLM backend (e.g. `http://localhost:11434/v1`); skips OpenRouter entirely |
+| `LOCAL_LLM_MODEL` | `local-model` | Model name sent to local backend |
+| `CLAUDE_CONCURRENCY` | `4` | Max concurrent LLM HTTP requests. Raises parallelism across locations but has no effect within a single location (agents there are always sequential). |
 | `PORT` | `3333` | HTTP server port |
+
+**Model tier resolution** (OpenRouter mode): `OPENROUTER_MODEL_<TIER>` → `OPENROUTER_MODEL` → `CHARACTER_MODEL` → default `haiku`.
+
+**Three backend modes**, selected automatically:
+1. `LOCAL_LLM_BASE_URL` set → local model (Ollama, LM Studio, etc.)
+2. `OPENROUTER_API_KEY` set → OpenRouter with live streaming
+3. Neither → Claude Code CLI (no API key required)
+
+---
+
+## Performance & Scaling
+
+### Tick duration
+
+Locations run in parallel (`Promise.all`), but agents within the same location are sequential (round-robin for interaction). Tick time is dominated by the **longest single-location group × calls per agent × LLM latency**.
+
+**Classic mode** (1 call per agent, OpenRouter Haiku):
+
+| Agents | `CLAUDE_CONCURRENCY` | ~Tick time |
+|---|---|---|
+| 20 | 4 | 8–15s |
+| 100 | 20 | 15–30s |
+| 500 | 50 | 30–60s |
+
+**Harness mode** (avg 5 calls per agent, OpenRouter Haiku):
+
+| Agents | `CLAUDE_CONCURRENCY` | ~Tick time |
+|---|---|---|
+| 20 | 10 | 40–90s |
+| 100 | 50 | 60–120s |
+| 500+ | 100 | 5–15 min |
+
+### The CLAUDE_CONCURRENCY ceiling
+
+`CLAUDE_CONCURRENCY` controls the semaphore on outbound HTTP requests. It helps when many locations run in parallel, but **cannot help agents within the same location** — they must be sequential so each sees what the others said.
+
+Practical ceiling:
+
+```
+tick_time ≈ max(agents at any one location) × avg_calls_per_agent × avg_latency_per_call
+```
+
+Example: 50 agents at Village Square × 5 calls × 1.5s/call via OpenRouter ≈ **375 seconds**, regardless of concurrency.
+
+### Reducing tick time
+
+| Approach | Impact |
+|---|---|
+| Use a faster model (`deepseek-v3.2`, `minimax-m2.5`) | Largest — 3–5× faster |
+| Use a local model via `LOCAL_LLM_BASE_URL` | Eliminates network latency |
+| Distribute agents across more locations | Reduces the longest group |
+| Lower harness budget (edit `budgetForAgent` in `harness.ts`) | Fewer calls per agent |
+| Use classic mode (`USE_HARNESS=false`) | ~5× fewer calls total |
 
 ---
 
@@ -730,11 +934,13 @@ To use free models, go to [openrouter.ai/settings/privacy](https://openrouter.ai
 brunnfeld/
 ├── src/
 │   ├── engine.ts              # Main loop — 14-phase runTick()
-│   ├── agent-runner.ts        # Perception builder · LLM calls · action dispatch
-│   ├── tools.ts               # Action schema + inline resolution
+│   ├── agent-runner.ts        # Classic mode: perception builder · LLM calls · action dispatch
+│   ├── harness.ts             # Harness mode: tool-calling loop · budget · round-robin interleaving
+│   ├── tool-registry.ts       # 15 harness tools · per-tool validation + execution
+│   ├── tools.ts               # Classic action schema + inline resolution
 │   ├── types.ts               # WorldState · AgentAction · Loan · all interfaces
 │   ├── index.ts               # CLI · initWorldState · reset logic
-│   ├── production.ts          # Recipe registry · production resolution
+│   ├── production.ts          # Recipe registry · production resolution · getProducibleItems
 │   ├── marketplace.ts         # Order book · price index · trade execution
 │   ├── marketplace-resolver.ts # post_order · cancel_order resolution
 │   ├── body.ts                # Hunger · energy · starvation · auto-eat
@@ -742,15 +948,23 @@ brunnfeld/
 │   ├── memory.ts              # Agent markdown I/O · compression · migration
 │   ├── time.ts                # Tick ↔ SimTime conversion
 │   ├── village-map.ts         # Locations · adjacency · opening hours
+│   ├── world-registry.ts      # Multi-village registry · location lookup · village routing
+│   ├── location-context.ts    # Per-location state snapshot for harness (presence, conversation)
 │   ├── events.ts              # SSE EventEmitter
 │   ├── server.ts              # HTTP server · /api routes · static viewer
-│   ├── llm.ts                 # OpenRouter + Claude CLI · streaming · <think> stripping
+│   ├── llm.ts                 # OpenRouter + Claude CLI + Local LLM · streaming · <think> stripping
 │   ├── god-mode.ts            # God Mode events · agent interview · whisper · meeting trigger
 │   ├── village-concerns.ts    # Village concern computation injected into Otto's perception
+│   ├── economy-tracker.ts     # Economy snapshots · Gini coefficient · GDP
+│   ├── trade-scanner.ts       # Trade opportunity detection for harness agents
+│   ├── seasons.ts             # Season production multipliers
+│   ├── away.ts                # Away/offline agent handling
+│   ├── sounds.ts              # Sound event emission
 │   ├── messages.ts            # send_message queuing
 │   ├── doors.ts               # lock / unlock / knock resolution
 │   ├── player.ts              # Player init · immediate action resolution · soft death revive
-│   └── tools-degradation.ts   # Tool wear tracking
+│   ├── tools-degradation.ts   # Tool wear tracking
+│   └── generate-world.ts      # World generation CLI (--villages, --agents, --seed)
 ├── viewer/                    # Web viewer (Vite + React + Canvas)
 │   └── src/
 │       ├── canvas/            # Pixel art renderer: map · agents · decorations · animations
@@ -758,6 +972,7 @@ brunnfeld/
 │       │                      # CharacterCreation · PlayerHUD · Feed
 │       └── hooks/             # SSE connection · state management (Zustand)
 ├── data/
+│   ├── world_config.json      # Village/agent configuration (edited by generate-world or by hand)
 │   ├── world_state.json       # Full simulation state (mutated every tick)
 │   ├── profiles/              # Agent background files (read-only, ~5 sentences each)
 │   ├── memory/                # Live agent memory files (written every tick)
@@ -812,7 +1027,7 @@ curl -X POST localhost:3333/api/player/action \
   -d '{"action":{"type":"eat","item":"bread","quantity":1}}'
 ```
 
-**SSE event types**: `tick`, `action`, `trade`, `production`, `economy`, `order`, `thinking`, `stream`, `event`, `event_expired`, `player:created`, `player:update`, `player:revived`
+**SSE event types**: `tick`, `action`, `trade`, `production`, `economy`, `order`, `thinking`, `stream`, `event`, `event_expired`, `player:created`, `player:update`, `player:revived`, `agent:thinking` (harness: agent started its turn), `harness:tool` (harness: agent called a tool `{agent, name, tool, summary}`)
 
 ---
 
@@ -951,6 +1166,19 @@ The LLM brings the rest: it knows what a miller does, what starvation feels like
 What you can't get from either alone: Hans paying Konrad 30 coin across two transactions, Konrad claiming no record of either payment, Hans threatening the village court. No pretraining pattern exists for that specific chain. It required the LLM's understanding of debt and fraud colliding with the engine's actual wallet ledger producing actual discrepancies. That's the demo.
 
 **The honest claim**: when you build a real economy around LLMs, they do economics. Not because they discover it from first principles. Because they already know what economics looks like, and now the consequences are real.
+
+---
+
+## Contributing
+
+The engine is intentionally small (~3K lines of TypeScript). Good areas to contribute:
+
+- New production recipes or seasonal events
+- Additional village archetypes (market town, mining camp, port)
+- Viewer improvements (trade graph, wealth chart, agent timeline)
+- New LLM backends or model configs
+
+Open an issue before large PRs — the design constraints are load-bearing.
 
 ---
 

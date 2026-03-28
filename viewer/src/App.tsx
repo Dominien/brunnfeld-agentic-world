@@ -10,6 +10,7 @@ import EconomyStrip from "./components/EconomyStrip";
 import CharacterCreation from "./components/CharacterCreation";
 import PlayerHUD from "./components/PlayerHUD";
 import TownHallView from "./components/TownHallView";
+import WorldMapView from "./components/WorldMapView";
 
 export default function App() {
   useSSE();
@@ -17,6 +18,7 @@ export default function App() {
   const connected = useVillageStore(s => s.connected);
   const watchMode = useVillageStore(s => s.watchMode);
   const activeMeeting = useVillageStore(s => s.activeMeeting);
+  const world = useVillageStore(s => s.world);
   const [previewTownHall, setPreviewTownHall] = useState(false);
 
   const showCreation = connected && !playerCreated && !watchMode;
@@ -42,7 +44,9 @@ export default function App() {
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
         {playerCreated && <PlayerHUD />}
 
-        <div style={{ flex: 1, position: "relative", overflow: "hidden", margin: "6px 0 0 6px" }}>
+        <div style={{ flex: 1, position: "relative", overflow: "hidden", margin: "6px 0 0 6px", display: "flex", flexDirection: "column" }}>
+          <WorldMapView agentLocations={world?.agent_locations} />
+          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           {showTownHall ? <TownHallView preview={!activeMeeting} /> : <VillageMap />}
 
           {/* Town Hall preview toggle — bottom-left of map */}
@@ -62,6 +66,7 @@ export default function App() {
               🏛 {previewTownHall ? "Back to village" : "Town Hall"}
             </button>
           )}
+          </div>
         </div>
 
         <RightPanel />

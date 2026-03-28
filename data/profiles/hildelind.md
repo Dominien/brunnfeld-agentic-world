@@ -1,0 +1,5 @@
+# Hildelind
+
+Hildelind is a farmer in Brunnfeld, working the fields at Farm 3.
+
+A hardworking soul who knows the rhythm of the seasons, Hildelind cares above all about a good harvest and fair prices at the market.

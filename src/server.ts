@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { createServer, IncomingMessage } from "http";
-import { readFileSync, readdirSync, existsSync } from "fs";
+import { readFileSync, readdirSync, existsSync, writeFileSync } from "fs";
 import { join, extname } from "path";
 import { eventBus, emitSSE } from "./events.js";
 import { readWorldState, writeWorldState } from "./memory.js";
@@ -11,6 +11,7 @@ import { initPlayer } from "./player.js";
 import { resolveAction } from "./tools.js";
 import { resolveProduction } from "./production.js";
 import { tickToTime } from "./time.js";
+import { reloadConfig, getVillages } from "./world-registry.js";
 
 export { emitSSE };
 
@@ -102,6 +103,7 @@ const server = createServer(async (req, res) => {
         "meeting:result":     (e) => send({ type: "meeting:result",     ...(e as object) }),
         "meeting:end":        (e) => send({ type: "meeting:end",        ...(e as object) }),
         "meeting:quorum_fail":(e) => send({ type: "meeting:quorum_fail",...(e as object) }),
+        "harness:tool":       (e) => send({ type: "harness:tool",       ...(e as object) }),
       };
 
       for (const [evt, handler] of Object.entries(handlers)) {
@@ -372,6 +374,64 @@ const server = createServer(async (req, res) => {
       headers["Content-Type"] = "application/json";
       res.writeHead(200, headers);
       res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ─── Start simulation ──────────────────────────
+    if (path === "/api/start" && req.method === "POST") {
+      eventBus.emit("sim:start");
+      headers["Content-Type"] = "application/json";
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ─── Villages list ────────────────────────────
+    if (path === "/api/villages") {
+      const villages = getVillages().map(v => ({
+        id: v.id,
+        name: v.name,
+        agentCount: v.agents.filter(a => a.id !== "player").length,
+        locationTiles: v.locationTiles ?? {},
+        locationTypes: v.locationTypes ?? {},
+      }));
+      headers["Content-Type"] = "application/json";
+      res.writeHead(200, headers);
+      res.end(JSON.stringify(villages));
+      return;
+    }
+
+    // ─── Generate world ────────────────────────────
+    if (path === "/api/generate-world" && req.method === "POST") {
+      const body = await parseBody(req);
+      const villages = Math.min(5, Math.max(1, Number(body["villages"] ?? 1)));
+      const agentsPerVillage = Math.min(200, Math.max(7, Number(body["agentsPerVillage"] ?? 19)));
+      const seed = body["seed"] ? String(body["seed"]) : String(Date.now());
+
+      try {
+        const { spawnSync } = await import("child_process");
+        const result = spawnSync(
+          process.execPath,
+          ["--import", "tsx/esm", "src/generate-world.ts",
+           `--villages=${villages}`, `--agents=${agentsPerVillage}`, `--seed=${seed}`],
+          { cwd: process.cwd(), encoding: "utf-8", timeout: 60000 },
+        );
+        if (result.status !== 0) {
+          throw new Error(result.stderr || "generate-world exited with non-zero status");
+        }
+        // Reload world registry so subsequent API calls reflect new config
+        reloadConfig();
+        const totalAgents = getVillages().reduce((n, v) => n + v.agents.filter(a => a.id !== "player").length, 0);
+        headers["Content-Type"] = "application/json";
+        res.writeHead(200, headers);
+        res.end(JSON.stringify({ ok: true, villages, totalAgents }));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("generate-world error:", msg);
+        headers["Content-Type"] = "application/json";
+        res.writeHead(500, headers);
+        res.end(JSON.stringify({ ok: false, error: msg }));
+      }
       return;
     }
 

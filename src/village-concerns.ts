@@ -1,17 +1,17 @@
 import type { AgentName, WorldState } from "./types.js";
-import { AGENT_NAMES, AGENT_DISPLAY_NAMES } from "./types.js";
+import { getAgentNames, getDisplayName } from "./world-registry.js";
 import { isAgentDead } from "./body.js";
 
 const FOOD_ITEMS = new Set(["bread", "meal", "meat", "vegetables", "eggs", "milk"]);
 
 export function computeVillageConcerns(state: WorldState, currentTick: number): string[] {
   const concerns: string[] = [];
-  const alive = AGENT_NAMES.filter(a => !isAgentDead(state.body[a]));
+  const alive = getAgentNames().filter(a => !isAgentDead(state.body[a]));
 
   // ── Broken tools ──────────────────────────────────────────
   const brokenTools = alive.filter(a => state.economics[a].tool?.durability === 0);
   if (brokenTools.length >= 2) {
-    const names = brokenTools.map(a => AGENT_DISPLAY_NAMES[a]).join(", ");
+    const names = brokenTools.map(a => getDisplayName(a)).join(", ");
     concerns.push(`[Village concern] ${brokenTools.length} villagers have broken tools and cannot produce: ${names}.`);
   }
 
@@ -28,7 +28,7 @@ export function computeVillageConcerns(state: WorldState, currentTick: number): 
   const veryHungry = alive.filter(a => state.body[a].hunger >= 4);
   const hungry = alive.filter(a => state.body[a].hunger >= 3);
   if (veryHungry.length >= 2) {
-    const names = veryHungry.map(a => AGENT_DISPLAY_NAMES[a]).slice(0, 5).join(", ");
+    const names = veryHungry.map(a => getDisplayName(a)).slice(0, 5).join(", ");
     concerns.push(`[Village concern] ${veryHungry.length} villagers are dangerously hungry and risk starving: ${names}.`);
   } else if (hungry.length >= 3) {
     concerns.push(`[Village concern] ${hungry.length} villagers are going hungry.`);
@@ -54,14 +54,14 @@ export function computeVillageConcerns(state: WorldState, currentTick: number): 
     const richestWallet = state.economics[richest].wallet;
     const pct = Math.round((richestWallet / totalWealth) * 100);
     if (pct >= 30) {
-      concerns.push(`[Village concern] ${AGENT_DISPLAY_NAMES[richest]} holds ${pct}% of all village coin (${richestWallet}c of ${totalWealth}c total).`);
+      concerns.push(`[Village concern] ${getDisplayName(richest)} holds ${pct}% of all village coin (${richestWallet}c of ${totalWealth}c total).`);
     }
   }
 
   // ── Recent petitions (past 1 in-game day = 16 ticks) ────
   const recentPetitions = (state.pending_petitions ?? []).filter(p => currentTick - p.tick <= 16);
   for (const p of recentPetitions) {
-    concerns.push(`[Petition] ${AGENT_DISPLAY_NAMES[p.agent as AgentName]}: "${p.topic}"`);
+    concerns.push(`[Petition] ${getDisplayName(p.agent)}: "${p.topic}"`);
   }
 
   return concerns;

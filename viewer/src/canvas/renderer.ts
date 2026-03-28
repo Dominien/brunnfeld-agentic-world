@@ -1,5 +1,5 @@
 import { loadSprite, drawSprite } from "./sprites";
-import { LOCATION_TILES, LOCATION_BUILDINGS, TILE_SIZE, WORLD_W, WORLD_H } from "./map";
+import { getActiveTiles, getActiveBuildings, TILE_SIZE, WORLD_W, WORLD_H } from "./map";
 import type { AgentName, WorldState } from "../types";
 import { AGENT_DISPLAY } from "../store";
 
@@ -23,18 +23,27 @@ const SPRITES = {
 
 // ─── Agent → sprite mapping ───────────────────────────────────────────────
 
-const AGENT_SPRITE: Record<AgentName, keyof typeof SPRITES> = {
+const AGENT_SPRITE: Record<string, keyof typeof SPRITES> = {
   hans: "pawnAxe", ida: "pawnIdle", konrad: "pawnIdle", ulrich: "pawnAxe",
   bertram: "pawnAxe", gerda: "pawnHammer", anselm: "pawnHammer",
   volker: "pawnHammer", wulf: "pawnHammer", liesel: "pawnIdle",
   sybille: "pawnIdle", friedrich: "pawnWood",
   otto: "warriorIdle", pater_markus: "monkIdle",
   dieter: "pawnPickaxe", magda: "pawnIdle", heinrich: "pawnAxe", elke: "pawnIdle", rupert: "pawnPickaxe",
-  player: "pawnIdle",  // fallback; player uses GIF rendering
+  player: "pawnIdle",
+};
+
+// Skill → sprite fallback for dynamically generated agents
+const SKILL_SPRITE: Record<string, keyof typeof SPRITES> = {
+  farmer: "pawnAxe",   cattle: "pawnIdle",     miner: "pawnPickaxe",
+  woodcutter: "pawnWood", miller: "pawnHammer", baker: "pawnHammer",
+  blacksmith: "pawnHammer", carpenter: "pawnHammer",
+  tavern: "pawnIdle",  healer: "pawnIdle",     seamstress: "pawnIdle",
+  none: "pawnIdle",
 };
 
 // ─── Agent color tints (CSS hue-rotate-like effect via colored overlays) ─
-const AGENT_COLORS: Record<AgentName, string> = {
+const AGENT_COLORS: Record<string, string> = {
   hans: "#e8c87a", ida: "#f4b8d4", konrad: "#a8d48a", ulrich: "#c8a84a",
   bertram: "#d4a870", gerda: "#d4d4a0", anselm: "#f0d890", volker: "#c84c4c",
   wulf: "#a07040", liesel: "#d878a8", sybille: "#80c8d8", friedrich: "#80a850",
@@ -42,6 +51,13 @@ const AGENT_COLORS: Record<AgentName, string> = {
   heinrich: "#d8c060", elke: "#e878b8", rupert: "#b0b0b0",
   player: "#ffd700",
 };
+
+function agentColor(agent: string): string {
+  if (AGENT_COLORS[agent]) return AGENT_COLORS[agent]!;
+  let h = 0;
+  for (const c of agent) h = (h * 31 + c.charCodeAt(0)) & 0xFFFFFF;
+  return `rgb(${140 + ((h >> 16) & 0x7F)},${100 + ((h >> 8) & 0x7F)},${80 + (h & 0x7F)})`;
+}
 
 // ─── Particles (floating text) ────────────────────────────────────────────
 
@@ -293,7 +309,7 @@ function drawGround(ctx: CanvasRenderingContext2D): void {
   // ── Terrain detail: Farm rows ─────────────────────────────────
   const farmLocs = ["Farm 1", "Farm 2", "Farm 3"] as const;
   for (const name of farmLocs) {
-    const tile = LOCATION_TILES[name];
+    const tile = getActiveTiles()[name];
     if (!tile) continue;
     const fx = tile.tx * TILE_SIZE - TILE_SIZE / 2;
     const fy = tile.ty * TILE_SIZE - TILE_SIZE / 2;
@@ -308,7 +324,7 @@ function drawGround(ctx: CanvasRenderingContext2D): void {
   }
 
   // ── Terrain detail: Forest tree silhouettes ───────────────────
-  const forestTile = LOCATION_TILES["Forest"];
+  const forestTile = getActiveTiles()["Forest"];
   if (forestTile) {
     const fx = forestTile.tx * TILE_SIZE - TILE_SIZE;
     const fy = forestTile.ty * TILE_SIZE - TILE_SIZE / 2;
@@ -328,7 +344,7 @@ function drawGround(ctx: CanvasRenderingContext2D): void {
   }
 
   // ── Terrain detail: Mine rocky texture ────────────────────────
-  const mineTile = LOCATION_TILES["Mine"];
+  const mineTile = getActiveTiles()["Mine"];
   if (mineTile) {
     const mx = mineTile.tx * TILE_SIZE;
     const my = mineTile.ty * TILE_SIZE;
@@ -387,8 +403,8 @@ function drawGround(ctx: CanvasRenderingContext2D): void {
 
 
 function drawBuildings(ctx: CanvasRenderingContext2D, hoveredLocation: string | null): void {
-  for (const [loc, bld] of Object.entries(LOCATION_BUILDINGS)) {
-    const tile = LOCATION_TILES[loc];
+  for (const [loc, bld] of Object.entries(getActiveBuildings())) {
+    const tile = getActiveTiles()[loc];
     if (!tile) continue;
     const px = tile.tx * TILE_SIZE;
     const py = tile.ty * TILE_SIZE;
@@ -431,9 +447,10 @@ function drawAgentSprite(
   isMoving: boolean,
   world: WorldState,
 ): void {
-  const spriteKey = isMoving ? "pawnRun" : AGENT_SPRITE[agent];
-  const spriteUrl = SPRITES[spriteKey];
-  const sheet = spriteKey ? loadSprite(spriteUrl, SPRITE_FRAME_W, SPRITE_FRAME_H) : null;
+  const skill = world.economics[agent]?.skill ?? "none";
+  const spriteKey = isMoving ? "pawnRun" : (AGENT_SPRITE[agent] ?? SKILL_SPRITE[skill] ?? "pawnIdle");
+  const spriteUrl = SPRITES[spriteKey as keyof typeof SPRITES];
+  const sheet = spriteUrl ? loadSprite(spriteUrl, SPRITE_FRAME_W, SPRITE_FRAME_H) : null;
   const animFrame = Math.floor(frameIndex / (isMoving ? 4 : 8));
 
   if (isSelected) {
@@ -447,7 +464,7 @@ function drawAgentSprite(
   if (sheet) {
     drawSprite(ctx, sheet, animFrame, cx - SPRITE_DISPLAY / 2, cy - SPRITE_DISPLAY / 2, SPRITE_DISPLAY, SPRITE_DISPLAY);
   } else {
-    ctx.fillStyle = AGENT_COLORS[agent] ?? "#ffffff";
+    ctx.fillStyle = agentColor(agent);
     ctx.beginPath();
     ctx.arc(cx, cy, SPRITE_DISPLAY / 2 - 2, 0, Math.PI * 2);
     ctx.fill();
@@ -477,44 +494,36 @@ function drawAgentSprite(
   }
 }
 
-const SAMURAI_FRAME_W = 96;
-const SAMURAI_FRAME_H = 96;
-const SAMURAI_DISPLAY = 44;
-
 function drawPlayerSprite(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  anim: ActiveAnimation | null,
+  _anim: ActiveAnimation | null,
   isMoving: boolean,
   isSelected: boolean,
 ): void {
-  // Use samurai sheet but invert colors so player looks distinct from The Stranger
-  const spriteUrl = isMoving ? SPRITES.samuraiRun : SPRITES.samuraiIdle;
-  const sheet = loadSprite(spriteUrl, SAMURAI_FRAME_W, SAMURAI_FRAME_H);
-  const animFrame = Math.floor(frameIndex / (isMoving ? 3 : 7));
+  const spriteUrl = isMoving ? SPRITES.pawnRun : SPRITES.pawnIdle;
+  const sheet = loadSprite(spriteUrl, SPRITE_FRAME_W, SPRITE_FRAME_H);
+  const animFrame = Math.floor(frameIndex / (isMoving ? 4 : 8));
 
   // Gold ring
   ctx.strokeStyle = "#ffd700";
   ctx.lineWidth = isSelected ? 4 : 3;
   ctx.beginPath();
-  ctx.arc(cx, cy, SAMURAI_DISPLAY / 2 + 3, 0, Math.PI * 2);
+  ctx.arc(cx, cy, SPRITE_DISPLAY / 2 + 4, 0, Math.PI * 2);
   ctx.stroke();
 
   if (sheet) {
-    ctx.save();
-    ctx.filter = "invert(1)";
-    drawSprite(ctx, sheet, animFrame, cx - SAMURAI_DISPLAY / 2, cy - SAMURAI_DISPLAY / 2, SAMURAI_DISPLAY, SAMURAI_DISPLAY);
-    ctx.restore();
+    drawSprite(ctx, sheet, animFrame, cx - SPRITE_DISPLAY / 2, cy - SPRITE_DISPLAY / 2, SPRITE_DISPLAY, SPRITE_DISPLAY);
   }
 
   // "You" label
   ctx.font = "bold 11px Georgia, serif";
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillText("You", cx + 1, cy - SAMURAI_DISPLAY / 2 - 4);
+  ctx.fillText("You", cx + 1, cy - SPRITE_DISPLAY / 2 - 4);
   ctx.fillStyle = "#ffd700";
-  ctx.fillText("You", cx, cy - SAMURAI_DISPLAY / 2 - 5);
+  ctx.fillText("You", cx, cy - SPRITE_DISPLAY / 2 - 5);
 }
 
 function drawAgents(
@@ -537,7 +546,7 @@ function drawAgents(
   }
 
   for (const [loc, agents] of Object.entries(byLoc)) {
-    const tile = LOCATION_TILES[loc];
+    const tile = getActiveTiles()[loc];
     if (!tile) continue;
     const basePx = tile.tx * TILE_SIZE;
     const basePy = tile.ty * TILE_SIZE;
@@ -613,7 +622,7 @@ function drawEventOverlays(
 
       case "drought": {
         for (const name of ["Farm 1", "Farm 2", "Farm 3"]) {
-          const tile = LOCATION_TILES[name];
+          const tile = getActiveTiles()[name];
           if (!tile) continue;
           const px = tile.tx * TILE_SIZE;
           const py = tile.ty * TILE_SIZE;
@@ -635,7 +644,7 @@ function drawEventOverlays(
       case "double_harvest": {
         const a = 0.15 + pulse * 0.20;
         for (const name of ["Farm 1", "Farm 2", "Farm 3"]) {
-          const tile = LOCATION_TILES[name];
+          const tile = getActiveTiles()[name];
           if (!tile) continue;
           const px = tile.tx * TILE_SIZE;
           const py = tile.ty * TILE_SIZE;
@@ -650,7 +659,7 @@ function drawEventOverlays(
       }
 
       case "mine_collapse": {
-        const tile = LOCATION_TILES["Mine"];
+        const tile = getActiveTiles()["Mine"];
         if (!tile) break;
         const px = tile.tx * TILE_SIZE;
         const py = tile.ty * TILE_SIZE;
@@ -669,7 +678,7 @@ function drawEventOverlays(
       }
 
       case "caravan": {
-        const tile = LOCATION_TILES["Merchant Camp"];
+        const tile = getActiveTiles()["Merchant Camp"];
         if (!tile) break;
         const px = tile.tx * TILE_SIZE;
         const py = tile.ty * TILE_SIZE;
@@ -745,7 +754,7 @@ export function hitTestLocation(
   let best: string | null = null;
   let bestDist = Infinity;
 
-  for (const [loc, tile] of Object.entries(LOCATION_TILES)) {
+  for (const [loc, tile] of Object.entries(getActiveTiles())) {
     const cx = tile.tx * TILE_SIZE + TILE_SIZE / 2;
     const cy = tile.ty * TILE_SIZE + TILE_SIZE / 2;
     const dist = Math.hypot(worldX - cx, worldY - cy);

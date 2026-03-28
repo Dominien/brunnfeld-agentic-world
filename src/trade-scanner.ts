@@ -1,6 +1,6 @@
 import type { AgentName, AgentTurnResult, ItemType, WorldState, SimTime } from "./types.js";
 import { getInventoryQty, removeFromInventory, addToInventory, feedbackToAgent, unreserveInventory } from "./inventory.js";
-import { updatePriceIndex } from "./marketplace.js";
+import { updatePriceIndex, getAgentMarketplace } from "./marketplace.js";
 
 interface BarterOffer {
   offerer: AgentName;
@@ -126,13 +126,14 @@ export function resolveBarter(
         feedbackToAgent(offerer, state, `Barter completed: gave ${offerStr}, received ${requestStr}.`);
         feedbackToAgent(receiver, state, `Barter completed: gave ${requestStr}, received ${offerStr}.`);
 
-        // Update price index for both sides
+        // Update price index for both sides (use offerer's village marketplace)
+        const offererMkt = getAgentMarketplace(offerer, state);
         for (const { item } of [...offerItems, ...requestItems]) {
-          updatePriceIndex(state.marketplace, item, state.marketplace.priceIndex[item] ?? 1);
+          updatePriceIndex(offererMkt, item, offererMkt.priceIndex[item] ?? 1);
         }
 
         // Push to trade history
-        state.marketplace.history.push({
+        offererMkt.history.push({
           id: `barter_${time.tick}_${offerer}_${receiver}`,
           tick: time.tick,
           buyer: receiver,

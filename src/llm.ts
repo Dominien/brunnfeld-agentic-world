@@ -72,10 +72,12 @@ function resolveOpenRouterModel(shortOrFull?: string): string {
 
 // ─── Shared OpenAI-compatible streaming fetch ──────────────────
 
+type MessageContent = string | Array<{ type: "text"; text: string; cache_control?: { type: "ephemeral" } }>;
+
 async function callOpenAICompat(
   baseUrl: string,
   modelId: string,
-  prompt: string,
+  prompt: MessageContent,
   extraHeaders: Record<string, string>,
   onChunk?: (chunk: string) => void,
 ): Promise<string> {
@@ -287,6 +289,145 @@ export async function callClaude(
   if (usingLocalLLM()) return callLocalLLM(prompt, options);
   if (usingOpenRouter()) return callOpenRouter(prompt, options);
   return callCLI(prompt, options);
+}
+
+/**
+ * Calls the LLM with a static prefix and dynamic suffix, using Anthropic prompt caching
+ * when available (OpenRouter + Anthropic model). The static prefix is marked with
+ * cache_control: {type: "ephemeral"} so repeated harness turns don't pay input tokens
+ * for the same seed/memory/tools context.
+ *
+ * Falls back to plain concatenation for non-Anthropic or local backends.
+ */
+export async function callClaudeWithPrefix(
+  staticPrefix: string,
+  dynamicSuffix: string,
+  options?: { model?: string; onChunk?: (chunk: string) => void },
+): Promise<string> {
+  if (usingOpenRouter()) {
+    const modelId = resolveOpenRouterModel(options?.model);
+    // Only use cache_control for Anthropic models — other providers ignore or reject it
+    if (modelId.includes("anthropic/")) {
+      await acquireSlot();
+      try {
+        const content: MessageContent = [
+          { type: "text", text: staticPrefix, cache_control: { type: "ephemeral" } },
+          { type: "text", text: dynamicSuffix },
+        ];
+        const result = await callOpenAICompat(
+          "https://openrouter.ai/api/v1",
+          modelId,
+          content,
+          {
+            "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "X-Title": "Brunnfeld Simulation",
+          },
+          options?.onChunk,
+        );
+        totalCalls++;
+        totalTokensEstimated += estimateTokens(staticPrefix + dynamicSuffix) + estimateTokens(result);
+        return result;
+      } finally {
+        releaseSlot();
+      }
+    }
+    // Non-Anthropic OpenRouter model — plain concatenation
+    return callOpenRouter(staticPrefix + "\n\n" + dynamicSuffix, options);
+  }
+
+  if (usingLocalLLM()) {
+    return callLocalLLM(staticPrefix + "\n\n" + dynamicSuffix, options);
+  }
+
+  // Claude Code CLI — use --system for the prefix (gets cached by Claude Code itself)
+  return callCLIWithSystem(staticPrefix, dynamicSuffix, options);
+}
+
+async function callCLIWithSystem(
+  systemPrompt: string,
+  userPrompt: string,
+  options?: { model?: string; onChunk?: (chunk: string) => void },
+): Promise<string> {
+  const modelId = options?.model
+    ? (CLI_MODEL_MAP[options.model] ?? options.model)
+    : CLI_MODEL_MAP.haiku!;
+
+  await acquireSlot();
+
+  return new Promise((resolve, reject) => {
+    const args = [
+      "--system", systemPrompt,
+      "--print", userPrompt,
+      "--output-format", "stream-json",
+      "--verbose",
+      "--model", modelId,
+    ];
+
+    const proc = spawn("claude", args, { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+
+    const timeout = setTimeout(() => {
+      proc.kill();
+      releaseSlot();
+      reject(new Error("claude CLI timed out after 45s"));
+    }, 45_000);
+
+    let fullText = "";
+    let stderr = "";
+    let buf = "";
+
+    proc.stderr.on("data", (data: Buffer) => { stderr += data.toString(); });
+
+    proc.stdout.on("data", (data: Buffer) => {
+      buf += data.toString();
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line) as Record<string, unknown>;
+          if (
+            event.type === "content_block_delta" &&
+            (event.delta as Record<string, unknown>)?.type === "text_delta"
+          ) {
+            const chunk = (event.delta as Record<string, unknown>).text as string;
+            fullText += chunk;
+            options?.onChunk?.(chunk);
+          } else if (event.type === "assistant") {
+            const msg = event.message as Record<string, unknown>;
+            const content = msg?.content as Array<Record<string, unknown>>;
+            for (const block of content ?? []) {
+              if (block.type === "text") {
+                const chunk = block.text as string;
+                if (!fullText.includes(chunk)) {
+                  fullText += chunk;
+                  options?.onChunk?.(chunk);
+                }
+              }
+            }
+          } else if (event.type === "result" && !fullText && event.result) {
+            fullText = event.result as string;
+          }
+        } catch { /* non-JSON line */ }
+      }
+    });
+
+    proc.on("close", (code) => {
+      clearTimeout(timeout);
+      releaseSlot();
+      totalCalls++;
+      totalTokensEstimated += estimateTokens(systemPrompt + userPrompt) + estimateTokens(fullText);
+      if (code !== 0) {
+        reject(new Error(`claude CLI exited with code ${code}: ${stderr.trim()}`));
+      } else {
+        const result = fullText.trim();
+        if (!result) reject(new Error("Empty response from claude CLI"));
+        else resolve(result);
+      }
+    });
+
+    proc.on("error", (err) => { clearTimeout(timeout); releaseSlot(); reject(err); });
+  });
 }
 
 // Strip <think>...</think> blocks (MiniMax M2.x, DeepSeek R1, etc.)

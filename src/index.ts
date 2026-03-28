@@ -8,6 +8,7 @@ import { readWorldState } from "./memory.js";
 import { runSimulation } from "./engine.js";
 import type { WorldState } from "./types.js";
 import { ALL_ITEMS } from "./types.js";
+import { eventBus } from "./events.js";
 
 const DATA_DIR = join(process.cwd(), "data");
 const INITIAL_MEMORIES_DIR = join(DATA_DIR, "memory_initial");
@@ -165,9 +166,15 @@ function initWorldState(): WorldState {
 function resetSimulation(): void {
   console.log("Resetting Brunnfeld to initial state...\n");
 
-  // Restore initial memories
+  // Restore initial memories — clear first so stale files from old worlds don't linger
   if (existsSync(INITIAL_MEMORIES_DIR)) {
     const memDir = join(DATA_DIR, "memory");
+    mkdirSync(memDir, { recursive: true });
+    // Delete all existing memory files
+    for (const file of readdirSync(memDir)) {
+      if (file.endsWith(".md")) unlinkSync(join(memDir, file));
+    }
+    // Restore blank stubs
     for (const file of readdirSync(INITIAL_MEMORIES_DIR)) {
       copyFileSync(join(INITIAL_MEMORIES_DIR, file), join(memDir, file));
     }
@@ -278,6 +285,9 @@ async function main(): Promise<void> {
     console.log("Use --resume to continue or --reset to start over.");
     return;
   }
+
+  console.log("  Waiting for world configuration… Open http://localhost:3333");
+  await new Promise<void>(resolve => eventBus.once("sim:start", resolve));
 
   await runSimulation();
 }

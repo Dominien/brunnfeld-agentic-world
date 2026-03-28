@@ -1,12 +1,15 @@
 // Frontend-mirrored types (slim subset of backend types.ts)
 
-export type AgentName =
-  | "hans" | "ida" | "konrad" | "ulrich" | "bertram"
-  | "gerda" | "anselm" | "volker" | "wulf"
-  | "liesel" | "sybille" | "friedrich"
-  | "otto" | "pater_markus"
-  | "dieter" | "magda" | "heinrich" | "elke" | "rupert"
-  | "player";
+// Widened to string to support dynamically generated multi-village worlds.
+export type AgentName = string;
+
+export interface VillageInfo {
+  id: string;
+  name: string;
+  agentCount: number;
+  locationTiles?: Record<string, { tx: number; ty: number }>;
+  locationTypes?: Record<string, string>;
+}
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export type ItemType = string;
@@ -142,4 +145,5 @@ export type SSEEvent =
   | { type: "meeting:vote"; agent: AgentName; side: "agree" | "disagree" }
   | { type: "meeting:result"; passed: boolean; agreeCount: number; law?: unknown }
   | { type: "meeting:end" }
-  | { type: "meeting:quorum_fail"; description: string; attendeeCount: number };
+  | { type: "meeting:quorum_fail"; description: string; attendeeCount: number }
+  | { type: "harness:tool"; agent: AgentName; name: string; tool: string; summary: string };

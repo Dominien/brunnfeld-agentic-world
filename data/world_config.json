@@ -1,0 +1,1457 @@
+{
+  "villages": [
+    {
+      "id": "brunnfeld",
+      "name": "Brunnfeld",
+      "agents": [
+        {
+          "id": "adelmut",
+          "displayName": "Adelmut",
+          "skill": "none",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "pabo",
+          "displayName": "Pabo",
+          "skill": "none",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "christine",
+          "displayName": "Christine",
+          "skill": "tavern",
+          "homeLocation": "Tavern",
+          "workLocation": "Tavern",
+          "description": "the tavern keeper"
+        },
+        {
+          "id": "oswald",
+          "displayName": "Oswald",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "barbara",
+          "displayName": "Barbara",
+          "skill": "blacksmith",
+          "homeLocation": "Forge",
+          "workLocation": "Forge",
+          "description": "the blacksmith"
+        },
+        {
+          "id": "aleidis",
+          "displayName": "Aleidis",
+          "skill": "woodcutter",
+          "homeLocation": "Cottage 4",
+          "workLocation": "Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "wulfhard",
+          "displayName": "Wulfhard",
+          "skill": "miner",
+          "homeLocation": "Cottage 5",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "wasmund",
+          "displayName": "Wasmund",
+          "skill": "miner",
+          "homeLocation": "Cottage 6",
+          "workLocation": "Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "kuno",
+          "displayName": "Kuno",
+          "skill": "healer",
+          "homeLocation": "Healer's Hut",
+          "workLocation": "Healer's Hut",
+          "description": "the village healer"
+        },
+        {
+          "id": "grimald",
+          "displayName": "Grimald",
+          "skill": "none",
+          "homeLocation": "Cottage 7",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "bederun",
+          "displayName": "Bederun",
+          "skill": "cattle",
+          "homeLocation": "Cottage 8",
+          "workLocation": "Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "benno",
+          "displayName": "Benno",
+          "skill": "carpenter",
+          "homeLocation": "Carpenter Shop",
+          "workLocation": "Carpenter Shop",
+          "description": "the carpenter"
+        },
+        {
+          "id": "adelbert",
+          "displayName": "Adelbert",
+          "skill": "farmer",
+          "homeLocation": "Cottage 9",
+          "workLocation": "Farm 1",
+          "description": "a farmer"
+        },
+        {
+          "id": "ingolf",
+          "displayName": "Ingolf",
+          "skill": "miller",
+          "homeLocation": "Mill",
+          "workLocation": "Mill",
+          "description": "the miller"
+        },
+        {
+          "id": "baturich",
+          "displayName": "Baturich",
+          "skill": "none",
+          "homeLocation": "Cottage 1",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "nikolas",
+          "displayName": "Nikolas",
+          "skill": "seamstress",
+          "homeLocation": "Seamstress Cottage",
+          "workLocation": "Seamstress Cottage",
+          "description": "the seamstress"
+        },
+        {
+          "id": "ruthild",
+          "displayName": "Ruthild",
+          "skill": "baker",
+          "homeLocation": "Bakery",
+          "workLocation": "Bakery",
+          "description": "the baker"
+        },
+        {
+          "id": "walburga",
+          "displayName": "Walburga",
+          "skill": "none",
+          "homeLocation": "Cottage 2",
+          "workLocation": "Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "mergart",
+          "displayName": "Mergart",
+          "skill": "farmer",
+          "homeLocation": "Cottage 3",
+          "workLocation": "Farm 2",
+          "description": "a farmer"
+        },
+        {
+          "id": "player",
+          "displayName": "You",
+          "skill": "none",
+          "homeLocation": "Village Square",
+          "workLocation": "Village Square",
+          "description": "a newcomer to the village"
+        }
+      ],
+      "locations": [
+        "Village Square",
+        "Bakery",
+        "Tavern",
+        "Forge",
+        "Carpenter Shop",
+        "Mill",
+        "Town Hall",
+        "Prison",
+        "Elder's House",
+        "Cottage 1",
+        "Cottage 2",
+        "Cottage 3",
+        "Cottage 4",
+        "Cottage 5",
+        "Cottage 6",
+        "Cottage 7",
+        "Cottage 8",
+        "Cottage 9",
+        "Seamstress Cottage",
+        "Healer's Hut",
+        "Farm 1",
+        "Farm 2",
+        "Farm 3",
+        "Forest",
+        "Mine",
+        "Merchant Camp",
+        "Road: Brunnfeld→Norddorf"
+      ],
+      "locationTypes": {
+        "Village Square": "square",
+        "Bakery": "bakery",
+        "Tavern": "tavern",
+        "Forge": "forge",
+        "Carpenter Shop": "carpenter",
+        "Mill": "mill",
+        "Town Hall": "townhall",
+        "Prison": "prison",
+        "Elder's House": "elder",
+        "Cottage 1": "cottage",
+        "Cottage 2": "cottage",
+        "Cottage 3": "cottage",
+        "Cottage 4": "cottage",
+        "Cottage 5": "cottage",
+        "Cottage 6": "cottage",
+        "Cottage 7": "cottage",
+        "Cottage 8": "cottage",
+        "Cottage 9": "cottage",
+        "Seamstress Cottage": "seamstress",
+        "Healer's Hut": "healer",
+        "Farm 1": "farm",
+        "Farm 2": "farm",
+        "Farm 3": "farm",
+        "Forest": "forest",
+        "Mine": "mine",
+        "Merchant Camp": "merchant"
+      },
+      "councilMembers": [
+        "adelmut",
+        "ingolf",
+        "barbara",
+        "ruthild",
+        "adelbert"
+      ],
+      "adjacency": {
+        "Village Square": [
+          "Bakery",
+          "Tavern",
+          "Town Hall",
+          "Mill",
+          "Forge",
+          "Carpenter Shop",
+          "Elder's House",
+          "Cottage 1",
+          "Farm 1",
+          "Merchant Camp",
+          "Road: Brunnfeld→Norddorf"
+        ],
+        "Merchant Camp": [
+          "Village Square"
+        ],
+        "Bakery": [
+          "Village Square",
+          "Mill"
+        ],
+        "Tavern": [
+          "Village Square",
+          "Elder's House"
+        ],
+        "Town Hall": [
+          "Village Square",
+          "Elder's House",
+          "Prison"
+        ],
+        "Prison": [
+          "Town Hall"
+        ],
+        "Elder's House": [
+          "Town Hall",
+          "Tavern",
+          "Village Square"
+        ],
+        "Mill": [
+          "Village Square",
+          "Bakery",
+          "Farm 1"
+        ],
+        "Forge": [
+          "Village Square",
+          "Carpenter Shop"
+        ],
+        "Carpenter Shop": [
+          "Village Square",
+          "Forge"
+        ],
+        "Cottage 1": [
+          "Village Square",
+          "Cottage 2"
+        ],
+        "Cottage 2": [
+          "Cottage 1",
+          "Cottage 3"
+        ],
+        "Cottage 3": [
+          "Cottage 2",
+          "Cottage 4"
+        ],
+        "Cottage 4": [
+          "Cottage 3",
+          "Cottage 5"
+        ],
+        "Cottage 5": [
+          "Cottage 4",
+          "Cottage 6"
+        ],
+        "Cottage 6": [
+          "Cottage 5",
+          "Cottage 7"
+        ],
+        "Cottage 7": [
+          "Cottage 6",
+          "Cottage 8",
+          "Healer's Hut"
+        ],
+        "Cottage 8": [
+          "Cottage 7",
+          "Cottage 9"
+        ],
+        "Cottage 9": [
+          "Cottage 8",
+          "Seamstress Cottage"
+        ],
+        "Seamstress Cottage": [
+          "Cottage 9"
+        ],
+        "Healer's Hut": [
+          "Cottage 7"
+        ],
+        "Farm 1": [
+          "Village Square",
+          "Mill",
+          "Farm 2"
+        ],
+        "Farm 2": [
+          "Farm 1",
+          "Farm 3"
+        ],
+        "Farm 3": [
+          "Farm 2",
+          "Forest"
+        ],
+        "Forest": [
+          "Farm 3",
+          "Mine"
+        ],
+        "Mine": [
+          "Forest"
+        ],
+        "Road: Brunnfeld→Norddorf": [
+          "Village Square",
+          "Norddorf:Village Square"
+        ]
+      },
+      "openingHours": {
+        "Tavern": {
+          "open": 4,
+          "close": 15
+        },
+        "Bakery": {
+          "open": 0,
+          "close": 8
+        },
+        "Forge": {
+          "open": 1,
+          "close": 10
+        },
+        "Carpenter Shop": {
+          "open": 1,
+          "close": 10
+        },
+        "Mill": {
+          "open": 1,
+          "close": 10
+        },
+        "Healer's Hut": {
+          "open": 1,
+          "close": 11
+        }
+      },
+      "locationTiles": {
+        "Village Square": {
+          "tx": 16,
+          "ty": 8
+        },
+        "Bakery": {
+          "tx": 13,
+          "ty": 9
+        },
+        "Tavern": {
+          "tx": 15,
+          "ty": 9
+        },
+        "Forge": {
+          "tx": 20,
+          "ty": 9
+        },
+        "Carpenter Shop": {
+          "tx": 22,
+          "ty": 9
+        },
+        "Mill": {
+          "tx": 8,
+          "ty": 8
+        },
+        "Town Hall": {
+          "tx": 24,
+          "ty": 8
+        },
+        "Prison": {
+          "tx": 25,
+          "ty": 9
+        },
+        "Elder's House": {
+          "tx": 27,
+          "ty": 8
+        },
+        "Cottage 1": {
+          "tx": 2,
+          "ty": 11
+        },
+        "Cottage 2": {
+          "tx": 5,
+          "ty": 11
+        },
+        "Cottage 3": {
+          "tx": 8,
+          "ty": 11
+        },
+        "Cottage 4": {
+          "tx": 13,
+          "ty": 11
+        },
+        "Cottage 5": {
+          "tx": 17,
+          "ty": 11
+        },
+        "Cottage 6": {
+          "tx": 2,
+          "ty": 13
+        },
+        "Cottage 7": {
+          "tx": 5,
+          "ty": 13
+        },
+        "Cottage 8": {
+          "tx": 9,
+          "ty": 13
+        },
+        "Cottage 9": {
+          "tx": 13,
+          "ty": 13
+        },
+        "Seamstress Cottage": {
+          "tx": 20,
+          "ty": 13
+        },
+        "Healer's Hut": {
+          "tx": 24,
+          "ty": 14
+        },
+        "Farm 1": {
+          "tx": 4,
+          "ty": 4
+        },
+        "Farm 2": {
+          "tx": 13,
+          "ty": 4
+        },
+        "Farm 3": {
+          "tx": 21,
+          "ty": 4
+        },
+        "Forest": {
+          "tx": 6,
+          "ty": 1
+        },
+        "Mine": {
+          "tx": 28,
+          "ty": 1
+        },
+        "Merchant Camp": {
+          "tx": 16,
+          "ty": 5
+        }
+      }
+    },
+    {
+      "id": "norddorf",
+      "name": "Norddorf",
+      "agents": [
+        {
+          "id": "alheide",
+          "displayName": "Alheide",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "heilwig",
+          "displayName": "Heilwig",
+          "skill": "baker",
+          "homeLocation": "Norddorf:Bakery",
+          "workLocation": "Norddorf:Bakery",
+          "description": "the baker"
+        },
+        {
+          "id": "bero",
+          "displayName": "Bero",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "senke",
+          "displayName": "Senke",
+          "skill": "miner",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "wigand",
+          "displayName": "Wigand",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 4",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "berchta",
+          "displayName": "Berchta",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 5",
+          "workLocation": "Norddorf:Farm 1",
+          "description": "a farmer"
+        },
+        {
+          "id": "albrade",
+          "displayName": "Albrade",
+          "skill": "healer",
+          "homeLocation": "Norddorf:Healer's Hut",
+          "workLocation": "Norddorf:Healer's Hut",
+          "description": "the village healer"
+        },
+        {
+          "id": "norberta",
+          "displayName": "Norberta",
+          "skill": "woodcutter",
+          "homeLocation": "Norddorf:Cottage 6",
+          "workLocation": "Norddorf:Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "georg",
+          "displayName": "Georg",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 7",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a farmer"
+        },
+        {
+          "id": "luitwin",
+          "displayName": "Luitwin",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 8",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "wilfred",
+          "displayName": "Wilfred",
+          "skill": "cattle",
+          "homeLocation": "Norddorf:Cottage 9",
+          "workLocation": "Norddorf:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "cundegund",
+          "displayName": "Cundegund",
+          "skill": "blacksmith",
+          "homeLocation": "Norddorf:Forge",
+          "workLocation": "Norddorf:Forge",
+          "description": "the blacksmith"
+        },
+        {
+          "id": "arnold",
+          "displayName": "Arnold",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 1",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "lutgard",
+          "displayName": "Lutgard",
+          "skill": "carpenter",
+          "homeLocation": "Norddorf:Carpenter Shop",
+          "workLocation": "Norddorf:Carpenter Shop",
+          "description": "the carpenter"
+        },
+        {
+          "id": "alheid",
+          "displayName": "Alheid",
+          "skill": "seamstress",
+          "homeLocation": "Norddorf:Seamstress Cottage",
+          "workLocation": "Norddorf:Seamstress Cottage",
+          "description": "the seamstress"
+        },
+        {
+          "id": "sophie",
+          "displayName": "Sophie",
+          "skill": "none",
+          "homeLocation": "Norddorf:Cottage 2",
+          "workLocation": "Norddorf:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "eckhard",
+          "displayName": "Eckhard",
+          "skill": "miller",
+          "homeLocation": "Norddorf:Mill",
+          "workLocation": "Norddorf:Mill",
+          "description": "the miller"
+        },
+        {
+          "id": "veronika",
+          "displayName": "Veronika",
+          "skill": "farmer",
+          "homeLocation": "Norddorf:Cottage 3",
+          "workLocation": "Norddorf:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "benzo",
+          "displayName": "Benzo",
+          "skill": "tavern",
+          "homeLocation": "Norddorf:Tavern",
+          "workLocation": "Norddorf:Tavern",
+          "description": "the tavern keeper"
+        }
+      ],
+      "locations": [
+        "Norddorf:Village Square",
+        "Norddorf:Bakery",
+        "Norddorf:Tavern",
+        "Norddorf:Forge",
+        "Norddorf:Carpenter Shop",
+        "Norddorf:Mill",
+        "Norddorf:Town Hall",
+        "Norddorf:Prison",
+        "Norddorf:Elder's House",
+        "Norddorf:Cottage 1",
+        "Norddorf:Cottage 2",
+        "Norddorf:Cottage 3",
+        "Norddorf:Cottage 4",
+        "Norddorf:Cottage 5",
+        "Norddorf:Cottage 6",
+        "Norddorf:Cottage 7",
+        "Norddorf:Cottage 8",
+        "Norddorf:Cottage 9",
+        "Norddorf:Seamstress Cottage",
+        "Norddorf:Healer's Hut",
+        "Norddorf:Farm 1",
+        "Norddorf:Farm 2",
+        "Norddorf:Farm 3",
+        "Norddorf:Forest",
+        "Norddorf:Mine",
+        "Norddorf:Merchant Camp",
+        "Road: Brunnfeld→Norddorf",
+        "Road: Norddorf→Ostheim"
+      ],
+      "locationTypes": {
+        "Norddorf:Village Square": "square",
+        "Norddorf:Bakery": "bakery",
+        "Norddorf:Tavern": "tavern",
+        "Norddorf:Forge": "forge",
+        "Norddorf:Carpenter Shop": "carpenter",
+        "Norddorf:Mill": "mill",
+        "Norddorf:Town Hall": "townhall",
+        "Norddorf:Prison": "prison",
+        "Norddorf:Elder's House": "elder",
+        "Norddorf:Cottage 1": "cottage",
+        "Norddorf:Cottage 2": "cottage",
+        "Norddorf:Cottage 3": "cottage",
+        "Norddorf:Cottage 4": "cottage",
+        "Norddorf:Cottage 5": "cottage",
+        "Norddorf:Cottage 6": "cottage",
+        "Norddorf:Cottage 7": "cottage",
+        "Norddorf:Cottage 8": "cottage",
+        "Norddorf:Cottage 9": "cottage",
+        "Norddorf:Seamstress Cottage": "seamstress",
+        "Norddorf:Healer's Hut": "healer",
+        "Norddorf:Farm 1": "farm",
+        "Norddorf:Farm 2": "farm",
+        "Norddorf:Farm 3": "farm",
+        "Norddorf:Forest": "forest",
+        "Norddorf:Mine": "mine",
+        "Norddorf:Merchant Camp": "merchant"
+      },
+      "councilMembers": [
+        "alheide",
+        "eckhard",
+        "cundegund",
+        "heilwig",
+        "berchta"
+      ],
+      "adjacency": {
+        "Norddorf:Village Square": [
+          "Norddorf:Bakery",
+          "Norddorf:Tavern",
+          "Norddorf:Town Hall",
+          "Norddorf:Mill",
+          "Norddorf:Forge",
+          "Norddorf:Carpenter Shop",
+          "Norddorf:Elder's House",
+          "Norddorf:Cottage 1",
+          "Norddorf:Farm 1",
+          "Norddorf:Merchant Camp",
+          "Road: Brunnfeld→Norddorf",
+          "Road: Norddorf→Ostheim"
+        ],
+        "Norddorf:Merchant Camp": [
+          "Norddorf:Village Square"
+        ],
+        "Norddorf:Bakery": [
+          "Norddorf:Village Square",
+          "Norddorf:Mill"
+        ],
+        "Norddorf:Tavern": [
+          "Norddorf:Village Square",
+          "Norddorf:Elder's House"
+        ],
+        "Norddorf:Town Hall": [
+          "Norddorf:Village Square",
+          "Norddorf:Elder's House",
+          "Norddorf:Prison"
+        ],
+        "Norddorf:Prison": [
+          "Norddorf:Town Hall"
+        ],
+        "Norddorf:Elder's House": [
+          "Norddorf:Town Hall",
+          "Norddorf:Tavern",
+          "Norddorf:Village Square"
+        ],
+        "Norddorf:Mill": [
+          "Norddorf:Village Square",
+          "Norddorf:Bakery",
+          "Norddorf:Farm 1"
+        ],
+        "Norddorf:Forge": [
+          "Norddorf:Village Square",
+          "Norddorf:Carpenter Shop"
+        ],
+        "Norddorf:Carpenter Shop": [
+          "Norddorf:Village Square",
+          "Norddorf:Forge"
+        ],
+        "Norddorf:Cottage 1": [
+          "Norddorf:Village Square",
+          "Norddorf:Cottage 2"
+        ],
+        "Norddorf:Cottage 2": [
+          "Norddorf:Cottage 1",
+          "Norddorf:Cottage 3"
+        ],
+        "Norddorf:Cottage 3": [
+          "Norddorf:Cottage 2",
+          "Norddorf:Cottage 4"
+        ],
+        "Norddorf:Cottage 4": [
+          "Norddorf:Cottage 3",
+          "Norddorf:Cottage 5"
+        ],
+        "Norddorf:Cottage 5": [
+          "Norddorf:Cottage 4",
+          "Norddorf:Cottage 6"
+        ],
+        "Norddorf:Cottage 6": [
+          "Norddorf:Cottage 5",
+          "Norddorf:Cottage 7"
+        ],
+        "Norddorf:Cottage 7": [
+          "Norddorf:Cottage 6",
+          "Norddorf:Cottage 8",
+          "Norddorf:Healer's Hut"
+        ],
+        "Norddorf:Cottage 8": [
+          "Norddorf:Cottage 7",
+          "Norddorf:Cottage 9"
+        ],
+        "Norddorf:Cottage 9": [
+          "Norddorf:Cottage 8",
+          "Norddorf:Seamstress Cottage"
+        ],
+        "Norddorf:Seamstress Cottage": [
+          "Norddorf:Cottage 9"
+        ],
+        "Norddorf:Healer's Hut": [
+          "Norddorf:Cottage 7"
+        ],
+        "Norddorf:Farm 1": [
+          "Norddorf:Village Square",
+          "Norddorf:Mill",
+          "Norddorf:Farm 2"
+        ],
+        "Norddorf:Farm 2": [
+          "Norddorf:Farm 1",
+          "Norddorf:Farm 3"
+        ],
+        "Norddorf:Farm 3": [
+          "Norddorf:Farm 2",
+          "Norddorf:Forest"
+        ],
+        "Norddorf:Forest": [
+          "Norddorf:Farm 3",
+          "Norddorf:Mine"
+        ],
+        "Norddorf:Mine": [
+          "Norddorf:Forest"
+        ],
+        "Road: Brunnfeld→Norddorf": [
+          "Village Square",
+          "Norddorf:Village Square"
+        ],
+        "Road: Norddorf→Ostheim": [
+          "Norddorf:Village Square",
+          "Ostheim:Village Square"
+        ]
+      },
+      "openingHours": {
+        "Norddorf:Tavern": {
+          "open": 4,
+          "close": 15
+        },
+        "Norddorf:Bakery": {
+          "open": 0,
+          "close": 8
+        },
+        "Norddorf:Forge": {
+          "open": 1,
+          "close": 10
+        },
+        "Norddorf:Carpenter Shop": {
+          "open": 1,
+          "close": 10
+        },
+        "Norddorf:Mill": {
+          "open": 1,
+          "close": 10
+        },
+        "Norddorf:Healer's Hut": {
+          "open": 1,
+          "close": 11
+        }
+      },
+      "locationTiles": {
+        "Norddorf:Village Square": {
+          "tx": 16,
+          "ty": 8
+        },
+        "Norddorf:Bakery": {
+          "tx": 13,
+          "ty": 9
+        },
+        "Norddorf:Tavern": {
+          "tx": 15,
+          "ty": 9
+        },
+        "Norddorf:Forge": {
+          "tx": 20,
+          "ty": 9
+        },
+        "Norddorf:Carpenter Shop": {
+          "tx": 22,
+          "ty": 9
+        },
+        "Norddorf:Mill": {
+          "tx": 8,
+          "ty": 8
+        },
+        "Norddorf:Town Hall": {
+          "tx": 24,
+          "ty": 8
+        },
+        "Norddorf:Prison": {
+          "tx": 25,
+          "ty": 9
+        },
+        "Norddorf:Elder's House": {
+          "tx": 27,
+          "ty": 8
+        },
+        "Norddorf:Cottage 1": {
+          "tx": 2,
+          "ty": 11
+        },
+        "Norddorf:Cottage 2": {
+          "tx": 5,
+          "ty": 11
+        },
+        "Norddorf:Cottage 3": {
+          "tx": 8,
+          "ty": 11
+        },
+        "Norddorf:Cottage 4": {
+          "tx": 13,
+          "ty": 11
+        },
+        "Norddorf:Cottage 5": {
+          "tx": 17,
+          "ty": 11
+        },
+        "Norddorf:Cottage 6": {
+          "tx": 2,
+          "ty": 13
+        },
+        "Norddorf:Cottage 7": {
+          "tx": 5,
+          "ty": 13
+        },
+        "Norddorf:Cottage 8": {
+          "tx": 9,
+          "ty": 13
+        },
+        "Norddorf:Cottage 9": {
+          "tx": 13,
+          "ty": 13
+        },
+        "Norddorf:Seamstress Cottage": {
+          "tx": 20,
+          "ty": 13
+        },
+        "Norddorf:Healer's Hut": {
+          "tx": 24,
+          "ty": 14
+        },
+        "Norddorf:Farm 1": {
+          "tx": 4,
+          "ty": 4
+        },
+        "Norddorf:Farm 2": {
+          "tx": 13,
+          "ty": 4
+        },
+        "Norddorf:Farm 3": {
+          "tx": 21,
+          "ty": 4
+        },
+        "Norddorf:Forest": {
+          "tx": 6,
+          "ty": 1
+        },
+        "Norddorf:Mine": {
+          "tx": 28,
+          "ty": 1
+        },
+        "Norddorf:Merchant Camp": {
+          "tx": 16,
+          "ty": 5
+        }
+      }
+    },
+    {
+      "id": "ostheim",
+      "name": "Ostheim",
+      "agents": [
+        {
+          "id": "hildigrim",
+          "displayName": "Hildigrim",
+          "skill": "baker",
+          "homeLocation": "Ostheim:Bakery",
+          "workLocation": "Ostheim:Bakery",
+          "description": "the baker"
+        },
+        {
+          "id": "lorenz",
+          "displayName": "Lorenz",
+          "skill": "cattle",
+          "homeLocation": "Ostheim:Cottage 1",
+          "workLocation": "Ostheim:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "willram",
+          "displayName": "Willram",
+          "skill": "cattle",
+          "homeLocation": "Ostheim:Cottage 2",
+          "workLocation": "Ostheim:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "sigisbert",
+          "displayName": "Sigisbert",
+          "skill": "cattle",
+          "homeLocation": "Ostheim:Cottage 3",
+          "workLocation": "Ostheim:Farm 2",
+          "description": "a cattle farmer"
+        },
+        {
+          "id": "engelburg",
+          "displayName": "Engelburg",
+          "skill": "farmer",
+          "homeLocation": "Ostheim:Cottage 4",
+          "workLocation": "Ostheim:Farm 1",
+          "description": "a farmer"
+        },
+        {
+          "id": "hildedrud",
+          "displayName": "Hildedrud",
+          "skill": "tavern",
+          "homeLocation": "Ostheim:Tavern",
+          "workLocation": "Ostheim:Tavern",
+          "description": "the tavern keeper"
+        },
+        {
+          "id": "hawis",
+          "displayName": "Hawis",
+          "skill": "farmer",
+          "homeLocation": "Ostheim:Cottage 5",
+          "workLocation": "Ostheim:Farm 2",
+          "description": "a farmer"
+        },
+        {
+          "id": "sibylle",
+          "displayName": "Sibylle",
+          "skill": "healer",
+          "homeLocation": "Ostheim:Healer's Hut",
+          "workLocation": "Ostheim:Healer's Hut",
+          "description": "the village healer"
+        },
+        {
+          "id": "diemut",
+          "displayName": "Diemut",
+          "skill": "blacksmith",
+          "homeLocation": "Ostheim:Forge",
+          "workLocation": "Ostheim:Forge",
+          "description": "the blacksmith"
+        },
+        {
+          "id": "norbert",
+          "displayName": "Norbert",
+          "skill": "seamstress",
+          "homeLocation": "Ostheim:Seamstress Cottage",
+          "workLocation": "Ostheim:Seamstress Cottage",
+          "description": "the seamstress"
+        },
+        {
+          "id": "petronella",
+          "displayName": "Petronella",
+          "skill": "farmer",
+          "homeLocation": "Ostheim:Cottage 6",
+          "workLocation": "Ostheim:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "ulwin",
+          "displayName": "Ulwin",
+          "skill": "farmer",
+          "homeLocation": "Ostheim:Cottage 7",
+          "workLocation": "Ostheim:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "kathe",
+          "displayName": "Kathe",
+          "skill": "woodcutter",
+          "homeLocation": "Ostheim:Cottage 8",
+          "workLocation": "Ostheim:Forest",
+          "description": "a woodcutter"
+        },
+        {
+          "id": "roland",
+          "displayName": "Roland",
+          "skill": "miner",
+          "homeLocation": "Ostheim:Cottage 9",
+          "workLocation": "Ostheim:Mine",
+          "description": "a miner"
+        },
+        {
+          "id": "alwin",
+          "displayName": "Alwin",
+          "skill": "farmer",
+          "homeLocation": "Ostheim:Cottage 1",
+          "workLocation": "Ostheim:Farm 3",
+          "description": "a farmer"
+        },
+        {
+          "id": "winfried",
+          "displayName": "Winfried",
+          "skill": "carpenter",
+          "homeLocation": "Ostheim:Carpenter Shop",
+          "workLocation": "Ostheim:Carpenter Shop",
+          "description": "the carpenter"
+        },
+        {
+          "id": "hedwig",
+          "displayName": "Hedwig",
+          "skill": "none",
+          "homeLocation": "Ostheim:Cottage 2",
+          "workLocation": "Ostheim:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "detlef",
+          "displayName": "Detlef",
+          "skill": "none",
+          "homeLocation": "Ostheim:Cottage 3",
+          "workLocation": "Ostheim:Village Square",
+          "description": "a villager"
+        },
+        {
+          "id": "aribo",
+          "displayName": "Aribo",
+          "skill": "miller",
+          "homeLocation": "Ostheim:Mill",
+          "workLocation": "Ostheim:Mill",
+          "description": "the miller"
+        }
+      ],
+      "locations": [
+        "Ostheim:Village Square",
+        "Ostheim:Bakery",
+        "Ostheim:Tavern",
+        "Ostheim:Forge",
+        "Ostheim:Carpenter Shop",
+        "Ostheim:Mill",
+        "Ostheim:Town Hall",
+        "Ostheim:Prison",
+        "Ostheim:Elder's House",
+        "Ostheim:Cottage 1",
+        "Ostheim:Cottage 2",
+        "Ostheim:Cottage 3",
+        "Ostheim:Cottage 4",
+        "Ostheim:Cottage 5",
+        "Ostheim:Cottage 6",
+        "Ostheim:Cottage 7",
+        "Ostheim:Cottage 8",
+        "Ostheim:Cottage 9",
+        "Ostheim:Seamstress Cottage",
+        "Ostheim:Healer's Hut",
+        "Ostheim:Farm 1",
+        "Ostheim:Farm 2",
+        "Ostheim:Farm 3",
+        "Ostheim:Forest",
+        "Ostheim:Mine",
+        "Ostheim:Merchant Camp",
+        "Road: Norddorf→Ostheim"
+      ],
+      "locationTypes": {
+        "Ostheim:Village Square": "square",
+        "Ostheim:Bakery": "bakery",
+        "Ostheim:Tavern": "tavern",
+        "Ostheim:Forge": "forge",
+        "Ostheim:Carpenter Shop": "carpenter",
+        "Ostheim:Mill": "mill",
+        "Ostheim:Town Hall": "townhall",
+        "Ostheim:Prison": "prison",
+        "Ostheim:Elder's House": "elder",
+        "Ostheim:Cottage 1": "cottage",
+        "Ostheim:Cottage 2": "cottage",
+        "Ostheim:Cottage 3": "cottage",
+        "Ostheim:Cottage 4": "cottage",
+        "Ostheim:Cottage 5": "cottage",
+        "Ostheim:Cottage 6": "cottage",
+        "Ostheim:Cottage 7": "cottage",
+        "Ostheim:Cottage 8": "cottage",
+        "Ostheim:Cottage 9": "cottage",
+        "Ostheim:Seamstress Cottage": "seamstress",
+        "Ostheim:Healer's Hut": "healer",
+        "Ostheim:Farm 1": "farm",
+        "Ostheim:Farm 2": "farm",
+        "Ostheim:Farm 3": "farm",
+        "Ostheim:Forest": "forest",
+        "Ostheim:Mine": "mine",
+        "Ostheim:Merchant Camp": "merchant"
+      },
+      "councilMembers": [
+        "hedwig",
+        "aribo",
+        "diemut",
+        "hildigrim",
+        "engelburg"
+      ],
+      "adjacency": {
+        "Ostheim:Village Square": [
+          "Ostheim:Bakery",
+          "Ostheim:Tavern",
+          "Ostheim:Town Hall",
+          "Ostheim:Mill",
+          "Ostheim:Forge",
+          "Ostheim:Carpenter Shop",
+          "Ostheim:Elder's House",
+          "Ostheim:Cottage 1",
+          "Ostheim:Farm 1",
+          "Ostheim:Merchant Camp",
+          "Road: Norddorf→Ostheim"
+        ],
+        "Ostheim:Merchant Camp": [
+          "Ostheim:Village Square"
+        ],
+        "Ostheim:Bakery": [
+          "Ostheim:Village Square",
+          "Ostheim:Mill"
+        ],
+        "Ostheim:Tavern": [
+          "Ostheim:Village Square",
+          "Ostheim:Elder's House"
+        ],
+        "Ostheim:Town Hall": [
+          "Ostheim:Village Square",
+          "Ostheim:Elder's House",
+          "Ostheim:Prison"
+        ],
+        "Ostheim:Prison": [
+          "Ostheim:Town Hall"
+        ],
+        "Ostheim:Elder's House": [
+          "Ostheim:Town Hall",
+          "Ostheim:Tavern",
+          "Ostheim:Village Square"
+        ],
+        "Ostheim:Mill": [
+          "Ostheim:Village Square",
+          "Ostheim:Bakery",
+          "Ostheim:Farm 1"
+        ],
+        "Ostheim:Forge": [
+          "Ostheim:Village Square",
+          "Ostheim:Carpenter Shop"
+        ],
+        "Ostheim:Carpenter Shop": [
+          "Ostheim:Village Square",
+          "Ostheim:Forge"
+        ],
+        "Ostheim:Cottage 1": [
+          "Ostheim:Village Square",
+          "Ostheim:Cottage 2"
+        ],
+        "Ostheim:Cottage 2": [
+          "Ostheim:Cottage 1",
+          "Ostheim:Cottage 3"
+        ],
+        "Ostheim:Cottage 3": [
+          "Ostheim:Cottage 2",
+          "Ostheim:Cottage 4"
+        ],
+        "Ostheim:Cottage 4": [
+          "Ostheim:Cottage 3",
+          "Ostheim:Cottage 5"
+        ],
+        "Ostheim:Cottage 5": [
+          "Ostheim:Cottage 4",
+          "Ostheim:Cottage 6"
+        ],
+        "Ostheim:Cottage 6": [
+          "Ostheim:Cottage 5",
+          "Ostheim:Cottage 7"
+        ],
+        "Ostheim:Cottage 7": [
+          "Ostheim:Cottage 6",
+          "Ostheim:Cottage 8",
+          "Ostheim:Healer's Hut"
+        ],
+        "Ostheim:Cottage 8": [
+          "Ostheim:Cottage 7",
+          "Ostheim:Cottage 9"
+        ],
+        "Ostheim:Cottage 9": [
+          "Ostheim:Cottage 8",
+          "Ostheim:Seamstress Cottage"
+        ],
+        "Ostheim:Seamstress Cottage": [
+          "Ostheim:Cottage 9"
+        ],
+        "Ostheim:Healer's Hut": [
+          "Ostheim:Cottage 7"
+        ],
+        "Ostheim:Farm 1": [
+          "Ostheim:Village Square",
+          "Ostheim:Mill",
+          "Ostheim:Farm 2"
+        ],
+        "Ostheim:Farm 2": [
+          "Ostheim:Farm 1",
+          "Ostheim:Farm 3"
+        ],
+        "Ostheim:Farm 3": [
+          "Ostheim:Farm 2",
+          "Ostheim:Forest"
+        ],
+        "Ostheim:Forest": [
+          "Ostheim:Farm 3",
+          "Ostheim:Mine"
+        ],
+        "Ostheim:Mine": [
+          "Ostheim:Forest"
+        ],
+        "Road: Norddorf→Ostheim": [
+          "Norddorf:Village Square",
+          "Ostheim:Village Square"
+        ]
+      },
+      "openingHours": {
+        "Ostheim:Tavern": {
+          "open": 4,
+          "close": 15
+        },
+        "Ostheim:Bakery": {
+          "open": 0,
+          "close": 8
+        },
+        "Ostheim:Forge": {
+          "open": 1,
+          "close": 10
+        },
+        "Ostheim:Carpenter Shop": {
+          "open": 1,
+          "close": 10
+        },
+        "Ostheim:Mill": {
+          "open": 1,
+          "close": 10
+        },
+        "Ostheim:Healer's Hut": {
+          "open": 1,
+          "close": 11
+        }
+      },
+      "locationTiles": {
+        "Ostheim:Village Square": {
+          "tx": 16,
+          "ty": 8
+        },
+        "Ostheim:Bakery": {
+          "tx": 13,
+          "ty": 9
+        },
+        "Ostheim:Tavern": {
+          "tx": 15,
+          "ty": 9
+        },
+        "Ostheim:Forge": {
+          "tx": 20,
+          "ty": 9
+        },
+        "Ostheim:Carpenter Shop": {
+          "tx": 22,
+          "ty": 9
+        },
+        "Ostheim:Mill": {
+          "tx": 8,
+          "ty": 8
+        },
+        "Ostheim:Town Hall": {
+          "tx": 24,
+          "ty": 8
+        },
+        "Ostheim:Prison": {
+          "tx": 25,
+          "ty": 9
+        },
+        "Ostheim:Elder's House": {
+          "tx": 27,
+          "ty": 8
+        },
+        "Ostheim:Cottage 1": {
+          "tx": 2,
+          "ty": 11
+        },
+        "Ostheim:Cottage 2": {
+          "tx": 5,
+          "ty": 11
+        },
+        "Ostheim:Cottage 3": {
+          "tx": 8,
+          "ty": 11
+        },
+        "Ostheim:Cottage 4": {
+          "tx": 13,
+          "ty": 11
+        },
+        "Ostheim:Cottage 5": {
+          "tx": 17,
+          "ty": 11
+        },
+        "Ostheim:Cottage 6": {
+          "tx": 2,
+          "ty": 13
+        },
+        "Ostheim:Cottage 7": {
+          "tx": 5,
+          "ty": 13
+        },
+        "Ostheim:Cottage 8": {
+          "tx": 9,
+          "ty": 13
+        },
+        "Ostheim:Cottage 9": {
+          "tx": 13,
+          "ty": 13
+        },
+        "Ostheim:Seamstress Cottage": {
+          "tx": 20,
+          "ty": 13
+        },
+        "Ostheim:Healer's Hut": {
+          "tx": 24,
+          "ty": 14
+        },
+        "Ostheim:Farm 1": {
+          "tx": 4,
+          "ty": 4
+        },
+        "Ostheim:Farm 2": {
+          "tx": 13,
+          "ty": 4
+        },
+        "Ostheim:Farm 3": {
+          "tx": 21,
+          "ty": 4
+        },
+        "Ostheim:Forest": {
+          "tx": 6,
+          "ty": 1
+        },
+        "Ostheim:Mine": {
+          "tx": 28,
+          "ty": 1
+        },
+        "Ostheim:Merchant Camp": {
+          "tx": 16,
+          "ty": 5
+        }
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_brunnfeld_norddorf",
+      "name": "Road: Brunnfeld→Norddorf",
+      "connectsVillages": [
+        "brunnfeld",
+        "norddorf"
+      ],
+      "transitTicks": 2
+    },
+    {
+      "id": "road_norddorf_ostheim",
+      "name": "Road: Norddorf→Ostheim",
+      "connectsVillages": [
+        "norddorf",
+        "ostheim"
+      ],
+      "transitTicks": 2
+    }
+  ]
+}

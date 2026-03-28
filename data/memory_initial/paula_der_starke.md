@@ -1,0 +1,10 @@
+# Paula der Starke
+
+## People
+*(Nobody known yet)*
+
+## Experiences
+*(Nothing yet)*
+
+## Important
+*(Nothing)*

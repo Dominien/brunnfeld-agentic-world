@@ -1,7 +1,7 @@
 import type {
   AgentName, AgentTurnResult, Law, ResolvedAction, SimTime, TickLog, WorldState,
 } from "./types.js";
-import { AGENT_NAMES, AGENT_DISPLAY_NAMES, COUNCIL_MEMBERS, AGENT_SKILLS } from "./types.js";
+import { getAgentNames, getDisplayName, getCouncilMembers, getDescription, getVillages, getAgentVillage } from "./world-registry.js";
 import { emitSSE } from "./events.js";
 import { tickToTime, ticksPerDay, getHourIndex } from "./time.js";
 import {
@@ -9,6 +9,7 @@ import {
   updateAgentMemoryFromActions, updateRelationships,
 } from "./memory.js";
 import { buildPerception, buildMeetingPerception, runBatchedAgents } from "./agent-runner.js";
+import { runHarnessLocation } from "./harness.js";
 import { getLLMStats } from "./llm.js";
 import { getSounds } from "./sounds.js";
 import { deliverMessages } from "./messages.js";
@@ -26,29 +27,19 @@ import { processPlayerTurn, updatePlayerBody, checkPlayerRevive } from "./player
 
 // ─── Agent descriptions for unknown acquaintances ────────────
 
-const AGENT_DESCRIPTIONS: Record<AgentName, string> = {
-  hans: "a farmer", ida: "a woman from the cottages", konrad: "a cattle farmer",
-  ulrich: "a farmer", bertram: "a farmer", gerda: "the miller",
-  anselm: "the baker", volker: "the blacksmith", wulf: "the carpenter",
-  liesel: "the tavern keeper", sybille: "the village healer", friedrich: "a woodcutter",
-  otto: "the village elder", pater_markus: "the village priest",
-  dieter: "a miner", magda: "a villager", heinrich: "a farmer", elke: "the seamstress", rupert: "a miner",
-  player: "a newcomer to the village",
-};
-
 function describeAgent(agent: AgentName, observer: AgentName, state: WorldState): string {
   const knows = state.acquaintances[observer]?.includes(agent);
-  if (!knows) return `${AGENT_DESCRIPTIONS[agent]} (unknown)`;
+  if (!knows) return `${getDescription(agent)} (unknown)`;
 
-  const skill = AGENT_SKILLS[agent];
+  const skill = state.economics[agent]?.skill;
   let label = (skill && skill !== "none")
-    ? `${AGENT_DISPLAY_NAMES[agent]} (${skill})`
-    : AGENT_DISPLAY_NAMES[agent];
+    ? `${getDisplayName(agent)} (${skill})`
+    : getDisplayName(agent);
 
   const theftRecords = state.caughtStealing?.[agent];
   if (theftRecords && theftRecords.length > 0) {
     const latest = theftRecords[theftRecords.length - 1]!;
-    const fromName = AGENT_DISPLAY_NAMES[latest.from];
+    const fromName = getDisplayName(latest.from);
     label += ` (known thief — caught stealing ${latest.item} from ${fromName})`;
   }
   return label;
@@ -73,7 +64,7 @@ function getWeather(state: WorldState, time: SimTime): string {
 function updateAcquaintances(results: AgentTurnResult[], state: WorldState): void {
   // Group by location
   const byLocation: Record<string, AgentName[]> = {};
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const loc = state.agent_locations[agent];
     if (!byLocation[loc]) byLocation[loc] = [];
     byLocation[loc]!.push(agent);
@@ -102,7 +93,7 @@ function updateAcquaintances(results: AgentTurnResult[], state: WorldState): voi
 // ─── Resolve laborer wages ────────────────────────────────────
 
 function resolveHiredWages(state: WorldState, time: SimTime): void {
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const eco = state.economics[agent];
     if (!eco.hiredBy || !eco.hiredUntilTick) continue;
     if (time.tick >= eco.hiredUntilTick) {
@@ -127,7 +118,7 @@ function enforceOpeningHours(state: WorldState, time: SimTime): void {
       marketplaceCloseIdx = law.value;
     }
   }
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     const loc = state.agent_locations[agent];
     if (loc === "Village Square" && marketplaceCloseIdx != null) {
       if (hourIdx >= marketplaceCloseIdx) {
@@ -169,7 +160,7 @@ function applyLawEffect(law: Law, state: WorldState, time: SimTime): void {
         state.banned[law.target] = time.tick + 32;
         state.agent_locations[law.target] = "Prison";
         feedbackToAgent(law.target, state, `You have been banished by village law. You are confined to the Prison for 2 days.`);
-        console.log(`  ⚖ ${AGENT_DISPLAY_NAMES[law.target]} banished until tick ${time.tick + 32}`);
+        console.log(`  ⚖ ${getDisplayName(law.target ?? "")} banished until tick ${time.tick + 32}`);
       }
       break;
     case "general_rule":
@@ -182,17 +173,17 @@ function applyLawEffect(law: Law, state: WorldState, time: SimTime): void {
 
 async function runMeetingPhase(state: WorldState, time: SimTime): Promise<{ attendees: Set<AgentName>; log: import("./types.js").MeetingLog | null }> {
   const mtg = state.pending_meeting!;
-  const activeAgents = AGENT_NAMES.filter(a => !isAgentDead(state.body[a]));
+  const activeAgents = getAgentNames().filter(a => !isAgentDead(state.body[a]));
 
   // 1. Attendance check
   const attendees = activeAgents.filter(a => state.agent_locations[a] === "Town Hall");
-  const atHall = AGENT_NAMES.map(a => `${a}=${state.agent_locations[a]}`).join(", ");
+  const atHall = getAgentNames().map(a => `${a}=${state.agent_locations[a]}`).join(", ");
   console.log(`  🏛 [Quorum] Agents at Town Hall: ${attendees.length}/${activeAgents.length} — ${attendees.join(", ") || "none"}`);
   console.log(`  🏛 [Quorum] All locations: ${atHall}`);
-  const councilPresent = attendees.filter(a => COUNCIL_MEMBERS.includes(a));
+  const councilPresent = attendees.filter(a => getCouncilMembers("brunnfeld").includes(a));
   if (councilPresent.length < 3) {
     const msg = `The village council meeting on "${mtg.description}" failed to convene — only ${councilPresent.length} council member(s) attended (need 3 of 5).`;
-    for (const a of AGENT_NAMES) feedbackToAgent(a, state, msg);
+    for (const a of getAgentNames()) feedbackToAgent(a, state, msg);
     emitSSE("meeting:quorum_fail", { description: mtg.description, attendeeCount: attendees.length });
     state.pending_meeting = undefined;
     return { attendees: new Set<AgentName>(), log: null };
@@ -202,7 +193,7 @@ async function runMeetingPhase(state: WorldState, time: SimTime): Promise<{ atte
   emitSSE("meeting:start", { agendaType: mtg.agendaType, description: mtg.description, attendees, attendeeCount: attendees.length });
 
   // 2. Discussion phase — 3 rounds, council members first (up to 5 participants)
-  const nonCouncilAttendees = attendees.filter(a => !COUNCIL_MEMBERS.includes(a));
+  const nonCouncilAttendees = attendees.filter(a => !getCouncilMembers("brunnfeld").includes(a));
   const participants = [
     ...councilPresent,
     ...nonCouncilAttendees,
@@ -288,12 +279,12 @@ async function runMeetingPhase(state: WorldState, time: SimTime): Promise<{ atte
     applyLawEffect(law, state, time);
     lawText = proposalText;
     const passMsg = `Village meeting result: "${proposalText}" PASSED (${agreeCount}/${PASS_THRESHOLD} agreed). New law recorded.`;
-    for (const a of AGENT_NAMES) feedbackToAgent(a, state, passMsg);
+    for (const a of getAgentNames()) feedbackToAgent(a, state, passMsg);
     emitSSE("meeting:result", { passed: true, agreeCount, law });
     console.log(`  ✅ Law passed: "${proposalText}" (${agreeCount} agreed)`);
   } else {
     const failMsg = `Village meeting result: "${proposalText}" FAILED (${agreeCount} agreed, needed ${PASS_THRESHOLD} of ${attendees.length}).`;
-    for (const a of AGENT_NAMES) feedbackToAgent(a, state, failMsg);
+    for (const a of getAgentNames()) feedbackToAgent(a, state, failMsg);
     emitSSE("meeting:result", { passed: false, agreeCount });
     console.log(`  ❌ Vote failed: "${proposalText}" (${agreeCount}/${PASS_THRESHOLD})`);
   }
@@ -315,6 +306,11 @@ async function runMeetingPhase(state: WorldState, time: SimTime): Promise<{ atte
   };
   return { attendees: new Set(attendees), log: meetingLog };
 }
+
+// ─── Persisted across ticks for harness sounds ────────────────
+// Stores last tick's resolved actions so look_around() can report
+// sounds from adjacent locations via getSounds().
+let prevTickActions: Record<AgentName, ResolvedAction[]> = {};
 
 // ─── Core tick ────────────────────────────────────────────────
 
@@ -344,7 +340,7 @@ export async function runTick(tick: number): Promise<void> {
       for (const loan of state.loans) {
         if (loan.repaid) continue;
         if (time.tick >= loan.dueTick && !isAgentDead(state.body[loan.debtor])) {
-          const creditorName = AGENT_DISPLAY_NAMES[loan.creditor];
+          const creditorName = getDisplayName(loan.creditor);
           const dueDay = Math.ceil(loan.dueTick / 16);
           feedbackToAgent(loan.debtor, state, `You owe ${loan.amount} coin to ${creditorName} — it was due on day ${dueDay}.`);
         }
@@ -355,20 +351,28 @@ export async function runTick(tick: number): Promise<void> {
       console.log(`  🌿 ${getSeasonDescription(time.season)}`);
     }
 
-    // Monday: tax collection by Otto (10% of each wallet)
+    // Monday: tax collection by village elder (first council member per village)
     if (time.dayOfWeek === "Monday") {
       let taxTotal = 0;
-      for (const agent of AGENT_NAMES) {
-        if (agent === "otto") continue;
-        const tax = Math.floor(state.economics[agent].wallet * (state.tax_rate ?? 0.10));
-        if (tax > 0) {
-          state.economics[agent].wallet -= tax;
-          state.economics["otto"].wallet += tax;
-          state.total_tax_collected += tax;
-          taxTotal += tax;
+      for (const village of getVillages()) {
+        const elder = getCouncilMembers(village.id)[0];
+        if (!elder || !state.economics[elder]) continue;
+        for (const agent of village.agents.map(a => a.id)) {
+          if (agent === elder || !state.economics[agent]) continue;
+          const tax = Math.floor(state.economics[agent].wallet * (state.tax_rate ?? 0.10));
+          if (tax > 0) {
+            state.economics[agent].wallet -= tax;
+            state.economics[elder].wallet += tax;
+            state.total_tax_collected += tax;
+            taxTotal += tax;
+          }
         }
       }
-      if (taxTotal > 0) console.log(`  💰 Tax day: Otto collected ${taxTotal} coin.`);
+      if (taxTotal > 0) {
+        const elders = getVillages().map(v => getCouncilMembers(v.id)[0]).filter(Boolean);
+        const elderNames = elders.map(e => getDisplayName(e)).join(", ");
+        console.log(`  💰 Tax day: ${elderNames} collected ${taxTotal} coin.`);
+      }
     }
   }
 
@@ -376,7 +380,7 @@ export async function runTick(tick: number): Promise<void> {
   enforceOpeningHours(state, time);
 
   // ── 3. UPDATE BODY STATES ────────────────────────────────────
-  for (const agent of AGENT_NAMES) {
+  for (const agent of getAgentNames()) {
     updateBodyState(state.body[agent], time);
   }
   updatePlayerBody(state, time);
@@ -384,7 +388,7 @@ export async function runTick(tick: number): Promise<void> {
   // ── 4. CLEAR LAST TICK'S FEEDBACK ───────────────────────────
   // (keep it around for one tick so agents read it, then clear before next LLM call)
   const feedbackSnapshot = { ...state.action_feedback };
-  for (const agent of AGENT_NAMES) state.action_feedback[agent] = [];
+  for (const agent of getAgentNames()) state.action_feedback[agent] = [];
   if (state.player_created) state.action_feedback["player"] = [];
 
   // ── 4b. GOD MODE EVENTS ──────────────────────────────────────
@@ -403,7 +407,7 @@ export async function runTick(tick: number): Promise<void> {
 
   // ── 4d. BANNED AGENT ENFORCEMENT ────────────────────────
   if (state.banned) {
-    for (const agent of AGENT_NAMES) {
+    for (const agent of getAgentNames()) {
       const bannedUntil = state.banned[agent];
       if (bannedUntil == null) continue;
       if (time.tick < bannedUntil) {
@@ -427,20 +431,20 @@ export async function runTick(tick: number): Promise<void> {
       calledAtTick: time.tick,
     };
     const noticeText = `Otto has called the daily village meeting. It will be held at the Town Hall tomorrow at dawn. All are welcome to attend and raise matters.`;
-    for (const a of AGENT_NAMES) feedbackToAgent(a, state, noticeText);
+    for (const a of getAgentNames()) feedbackToAgent(a, state, noticeText);
     console.log(`  🏛 Daily meeting auto-scheduled for tick ${nextDawnTick}`);
   }
 
   // ── 4f. PRE-MEETING NUDGE ────────────────────────────────────
   if (state.pending_meeting && time.tick === state.pending_meeting.scheduledTick - 1) {
-    for (const a of AGENT_NAMES) {
+    for (const a of getAgentNames()) {
       feedbackToAgent(a, state, `[URGENT] Village meeting starts next hour at the Town Hall. Move to Town Hall now if you are not already there.`);
     }
   }
 
   // Council summons — evening before (8 ticks / hours before dawn)
   if (state.pending_meeting && time.tick === state.pending_meeting.scheduledTick - 8) {
-    for (const a of COUNCIL_MEMBERS) {
+    for (const a of getCouncilMembers("brunnfeld")) {
       if (!isAgentDead(state.body[a])) {
         feedbackToAgent(a, state,
           `[Council duty] Village council meets tomorrow at dawn at the Town Hall. Your attendance is required.`
@@ -478,13 +482,13 @@ export async function runTick(tick: number): Promise<void> {
         calledAtTick: time.tick,
       };
       const noticeText = `Otto has called the daily village meeting. It will be held at the Town Hall tomorrow at dawn. All are welcome to attend and raise matters.`;
-      for (const a of AGENT_NAMES) feedbackToAgent(a, state, noticeText);
+      for (const a of getAgentNames()) feedbackToAgent(a, state, noticeText);
       console.log(`  🏛 Daily meeting auto-scheduled for tick ${nextDawnTick}`);
     }
   }
 
   // ── 5. BUILD PERCEPTIONS ─────────────────────────────────────
-  const activeAgents = AGENT_NAMES.filter(a =>
+  const activeAgents = getAgentNames().filter(a =>
     !isAgentDead(state.body[a]) &&
     !(state.banned?.[a] != null && time.tick < state.banned[a]!) &&
     !meetingAttendees.has(a)   // meeting attendees already acted this tick
@@ -535,7 +539,22 @@ export async function runTick(tick: number): Promise<void> {
       const locResults: AgentTurnResult[] = [];
       let locationRounds: unknown[] = [];
 
-      if (group.length === 1) {
+      if (process.env.USE_HARNESS === "true") {
+        // ── Harness path: each agent gets its own tool-calling loop ──
+        const results = await runHarnessLocation(group, state, time, movedThisTick, prevTickActions);
+        locResults.push(...results);
+        // Populate rounds with real per-agent action data (mirrors non-harness format)
+        locationRounds = results.map(r => ({
+          agent: r.agent,
+          toolCalls: r.historyLines ? Math.floor(r.historyLines.length / 2) : 0,
+          actions: r.actions.map(a => ({
+            type: a.type,
+            ...(a.text ? { text: a.text.slice(0, 120) } : {}),
+            ...(a.result ? { result: a.result.slice(0, 120) } : {}),
+            ...(a.location ? { location: a.location } : {}),
+          })),
+        }));
+      } else if (group.length === 1) {
         // Solo — single LLM call
         const agent = group[0]!;
         const result = await runBatchedAgents([agent], perceptions, state, time, 5, movedThisTick);
@@ -616,6 +635,9 @@ export async function runTick(tick: number): Promise<void> {
   // Include player result so production/marketplace resolvers process it
   if (playerTurnResult) allResults.push(playerTurnResult);
 
+  // Persist resolved actions for next tick's harness look_around() sounds
+  prevTickActions = Object.fromEntries(allResults.map(r => [r.agent, r.actions]));
+
   // ── 7. SOCIAL RESOLUTION ────────────────────────────────────
   // Capture from-locations before applying moves (for accurate tick log)
   const moveFromLocations: Partial<Record<AgentName, string>> = {};
@@ -656,8 +678,8 @@ export async function runTick(tick: number): Promise<void> {
   }
 
   for (const result of allResults) {
-    const others = byLocationForMemory[result.agent]?.map(a => AGENT_DISPLAY_NAMES[a]) ?? [];
-    updateAgentMemoryFromActions(result.agent, time, state.agent_locations[result.agent], others, result.actions);
+    const others = byLocationForMemory[result.agent]?.map(a => getDisplayName(a)) ?? [];
+    updateAgentMemoryFromActions(result.agent, time, state.agent_locations[result.agent], others, result.actions, result.historyLines);
     updateRelationships(result.agent, result.actions, others);
   }
 
@@ -696,9 +718,12 @@ export async function runTick(tick: number): Promise<void> {
     weather: state.weather,
     locations: tickLocations,
     movements: allResults
-      .filter(r => r.pendingMove)
+      .filter(r => r.pendingMove && r.pendingMove !== (moveFromLocations[r.agent] ?? r.pendingMove))
       .map(r => ({ agent: r.agent, from: moveFromLocations[r.agent] ?? "", to: r.pendingMove! })),
-    trades: state.marketplace.history.filter(t => t.tick === tick),
+    trades: (state.marketplaces
+      ? Object.values(state.marketplaces).flatMap(m => m.history)
+      : state.marketplace.history
+    ).filter(t => t.tick === tick),
     productions: state.production_log.filter(e => e.tick === tick),
     ...(meetingLog ? { meeting: meetingLog } : {}),
   };
@@ -753,7 +778,7 @@ export async function runSimulation(startTick?: number, tickOnce = false): Promi
 
     // Stop if everyone is dead
     const state2 = readWorldState();
-    const anyAlive = AGENT_NAMES.some(a => !isAgentDead(state2.body[a]));
+    const anyAlive = getAgentNames().some(a => !isAgentDead(state2.body[a]));
     if (!anyAlive) {
       console.log("\n  ⚰  All agents have died. Simulation halted.");
       break;

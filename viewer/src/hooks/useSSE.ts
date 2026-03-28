@@ -3,13 +3,22 @@ import { useVillageStore, tickLogToFeed } from "../store";
 import type { SSEEvent } from "../types";
 
 export function useSSE(): void {
-  const { setConnected, handleSSEEvent, setWorld, setAvailableTicks, appendHistoricalFeed } = useVillageStore();
+  const { setConnected, handleSSEEvent, setWorld, setAvailableTicks, appendHistoricalFeed, setVillages, setActiveVillageId } = useVillageStore();
 
   useEffect(() => {
     // 1. Load current world state
     fetch("/api/state")
       .then((r) => r.json())
       .then((state) => setWorld(state))
+      .catch(() => {});
+
+    // Load village list for multi-village support
+    fetch("/api/villages")
+      .then((r) => r.json())
+      .then((villages) => {
+        setVillages(villages);
+        if (villages.length > 0) setActiveVillageId(villages[0].id);
+      })
       .catch(() => {});
 
     // 2. Load available tick IDs and seed the feed with recent history

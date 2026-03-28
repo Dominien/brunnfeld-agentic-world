@@ -1,0 +1,10 @@
+# Luitpold der Alte
+
+## People
+*(Nobody known yet)*
+
+## Experiences
+*(Nothing yet)*
+
+## Important
+*(Nothing)*

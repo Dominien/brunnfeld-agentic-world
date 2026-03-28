@@ -1,28 +1,21 @@
 import type { AgentAction, AgentName, AgentTurnResult, ItemType, WorldState, SimTime } from "./types.js";
-import { AGENT_DISPLAY_NAMES, AGENT_NAMES, COUNCIL_MEMBERS } from "./types.js";
 import { callClaudeJSON } from "./llm.js";
 import { emitSSE } from "./events.js";
 import { readAgentProfile, readAgentMemory } from "./memory.js";
 import { getInventoryQty, getReserved } from "./inventory.js";
-import { getRelevantOrders } from "./marketplace.js";
+import { getRelevantOrders, getAgentMarketplace } from "./marketplace.js";
 import { getToolPerception } from "./tools-degradation.js";
 import { bodyPerception } from "./body.js";
 import { buildActionSchema, resolveAction, type ResolveContext } from "./tools.js";
-import { LOCATIONS } from "./village-map.js";
 import { tickToTime } from "./time.js";
 import { RECIPES, MULTI_FARM_ITEMS } from "./production.js";
 import { computeVillageConcerns } from "./village-concerns.js";
+import { getAgentNames, getDisplayName, getCouncilMembers, getAgentVillage, getVillageLocations, getLocationType, getVillages, getRoads, isRoadLocation, getVillageForLocation } from "./world-registry.js";
 
 // ─── Hunger food hint ─────────────────────────────────────────
 
 const EDIBLE_ITEMS = new Set<string>(["bread", "meal", "meat", "vegetables", "eggs", "milk"]);
 
-// Static food specialist knowledge — every villager knows these people have food
-const FOOD_SPECIALISTS: { agent: AgentName; items: string[]; location: string; hours: string }[] = [
-  { agent: "anselm",  items: ["bread"],        location: "Bakery",  hours: "6–13" },
-  { agent: "liesel",  items: ["ale", "meal"],  location: "Tavern",  hours: "10–21" },
-  { agent: "konrad",  items: ["milk", "meat"], location: "Farm 2",  hours: "6–15" },
-];
 
 function getHungryNoFoodHint(agent: AgentName, state: WorldState): string {
   const body = state.body[agent];
@@ -44,13 +37,14 @@ function getHungryNoFoodHint(agent: AgentName, state: WorldState): string {
     ? `You have ${rawGrainHints.join(" and ")} — not edible raw. Buy bread instead.\n `
     : "";
 
-  const foodOrders = state.marketplace.orders
+  const agentMkt = getAgentMarketplace(agent, state);
+  const foodOrders = agentMkt.orders
     .filter(o => o.type === "sell" && EDIBLE_ITEMS.has(o.item) && o.quantity > 0)
     .sort((a, b) => a.price - b.price);
 
   if (foodOrders.length > 0) {
     const cheapest = foodOrders[0]!;
-    const seller = AGENT_DISPLAY_NAMES[cheapest.agentId as AgentName] ?? cheapest.agentId;
+    const seller = getDisplayName(cheapest.agentId);
     const canAfford = eco.wallet >= cheapest.price;
     const affordNote = canAfford
       ? ""
@@ -58,18 +52,17 @@ function getHungryNoFoodHint(agent: AgentName, state: WorldState): string {
     return `(${rawGrainNote}No food in inventory — you need to eat soon.\n Buy ${cheapest.item} at Village Square: ${cheapest.price}c from ${seller}. Use: buy_item.${affordNote})`;
   }
 
-  // No market food — inject specialist knowledge
-  const specialistLines = FOOD_SPECIALISTS
-    .filter(s => s.agent !== agent)
-    .map(s => {
-      const currentLoc = state.agent_locations[s.agent];
-      const locNote = currentLoc === s.location
-        ? `currently at ${s.location}`
-        : `away at ${currentLoc}`;
-      return ` • ${AGENT_DISPLAY_NAMES[s.agent]} (${s.items.join(", ")}) — ${s.location} ${s.hours}, ${locNote}`;
+  // No market food — look up any agents who produce food items by skill
+  const foodProducerSkills = new Set(["cattle", "farmer", "baker", "tavern"]);
+  const specialistLines = getAgentNames()
+    .filter(a => a !== agent && foodProducerSkills.has(state.economics[a]?.skill ?? ""))
+    .slice(0, 3)
+    .map(a => {
+      const currentLoc = state.agent_locations[a];
+      return ` • ${getDisplayName(a)} (${state.economics[a]?.skill}) — currently at ${currentLoc}`;
     });
 
-  return `(${rawGrainNote}No food in inventory and nothing at the marketplace. Known food sources:\n${specialistLines.join("\n")}\n Go there or use send_message to request they post a sell order.)`;
+  return `(${rawGrainNote}No food in inventory and nothing at the marketplace.${specialistLines.length > 0 ? ` Known food producers:\n${specialistLines.join("\n")}\n Go there or use send_message to request they post a sell order.` : " Nobody seems to have food. Consider sending a message to ask around."})`;
 }
 
 // ─── Location keeper note ─────────────────────────────────────
@@ -78,14 +71,14 @@ const SPECIALIST_SKILLS = new Set<string>(["miller", "baker", "tavern", "blacksm
 
 function getLocationKeeperNote(agent: AgentName, state: WorldState): string {
   const location = state.agent_locations[agent];
-  for (const a of AGENT_NAMES) {
+  for (const a of getAgentNames()) {
     if (a === agent) continue;
     const aEco = state.economics[a];
     if (aEco.workLocation !== location) continue;
     if (!SPECIALIST_SKILLS.has(aEco.skill)) continue;
     // This is a specialist's work location
     if (state.agent_locations[a] !== location) {
-      const keeperName = AGENT_DISPLAY_NAMES[a];
+      const keeperName = getDisplayName(a);
       const keeperLoc = state.agent_locations[a];
       return `(This is ${keeperName}'s ${location}. ${keeperName} is currently at ${keeperLoc}. Use send_message to ${keeperName} to arrange a purchase, or check the Village Square marketplace.)`;
     }
@@ -104,7 +97,7 @@ function getSurplusFoodHint(agent: AgentName, state: WorldState): string {
     if (!EDIBLE_ITEMS.has(inv.type)) continue;
     const available = inv.quantity - (inv.reserved ?? 0);
     if (available <= 2) continue;
-    const hasOrder = state.marketplace.orders.some(
+    const hasOrder = getAgentMarketplace(agent, state).orders.some(
       o => o.agentId === agent && o.type === "sell" && o.item === inv.type
     );
     if (!hasOrder) surplusItems.push(`${available} ${inv.type}`);
@@ -112,10 +105,10 @@ function getSurplusFoodHint(agent: AgentName, state: WorldState): string {
 
   if (surplusItems.length === 0) return "";
 
-  const hungryNames = AGENT_NAMES
+  const hungryNames = getAgentNames()
     .filter(a => a !== agent && state.body[a].hunger >= 3 && (state.body[a].starvation_ticks ?? 0) < 999)
     .slice(0, 2)
-    .map(a => AGENT_DISPLAY_NAMES[a]);
+    .map(a => getDisplayName(a));
 
   const hungryNote = hungryNames.length > 0
     ? ` ${hungryNames.join(" and ")} ${hungryNames.length === 1 ? "appears" : "appear"} to be hungry.`
@@ -138,11 +131,11 @@ function getLoanPerception(agent: AgentName, state: WorldState): string {
   const parts: string[] = [];
   for (const loan of owed) {
     const dueDay = Math.ceil(loan.dueTick / 16);
-    parts.push(`You are owed ${loan.amount}c by ${AGENT_DISPLAY_NAMES[loan.debtor]} (due day ${dueDay}).`);
+    parts.push(`You are owed ${loan.amount}c by ${getDisplayName(loan.debtor)} (due day ${dueDay}).`);
   }
   for (const loan of owes) {
     const dueDay = Math.ceil(loan.dueTick / 16);
-    parts.push(`You owe ${loan.amount}c to ${AGENT_DISPLAY_NAMES[loan.creditor]} (due day ${dueDay}).`);
+    parts.push(`You owe ${loan.amount}c to ${getDisplayName(loan.creditor)} (due day ${dueDay}).`);
   }
 
   return `\nLoans: ${parts.join(" ")}`;
@@ -158,7 +151,7 @@ function getVillageLaws(state: WorldState, time: SimTime): string {
     if (law.type === "banishment" && law.target) {
       const untilTick = state.banned?.[law.target] ?? (law.passedTick + 32);
       const untilDay = Math.ceil(untilTick / 16);
-      return `- ${AGENT_DISPLAY_NAMES[law.target]} banished until day ${untilDay}`;
+      return `- ${getDisplayName(law.target ?? "")} banished until day ${untilDay}`;
     }
     return `- ${law.description} (passed day ${day})`;
   });
@@ -195,8 +188,8 @@ function buildMarketboardLines(agent: AgentName, state: WorldState): string {
   if (orders.length === 0) return "  (no current orders)";
   return orders
     .map(o => o.type === "sell"
-      ? `  SELL: ${o.item} ×${o.quantity} at ${o.price}c (by ${AGENT_DISPLAY_NAMES[o.agentId as AgentName] || o.agentId}, expires in ${o.expiresAtTick - state.current_tick} ticks)`
-      : `  WANT: ${o.item} ×${o.quantity}, paying up to ${o.price}c (${AGENT_DISPLAY_NAMES[o.agentId as AgentName] || o.agentId})`
+      ? `  SELL: ${o.item} ×${o.quantity} at ${o.price}c (by ${getDisplayName(o.agentId) || o.agentId}, expires in ${o.expiresAtTick - state.current_tick} ticks)`
+      : `  WANT: ${o.item} ×${o.quantity}, paying up to ${o.price}c (${getDisplayName(o.agentId) || o.agentId})`
     )
     .join("\n");
 }
@@ -235,6 +228,84 @@ function getProducibleBlock(agent: AgentName, state: WorldState): string {
   return `\nYou can produce here:\n${lines.join("\n")}`;
 }
 
+// ─── Travel hint block ────────────────────────────────────────
+
+function buildTravelBlock(agent: AgentName, state: WorldState): string {
+  const villages = getVillages();
+  if (villages.length <= 1) return "";
+
+  const loc = state.agent_locations[agent];
+  const roads = getRoads();
+  const onRoad = isRoadLocation(loc);
+
+  if (onRoad) {
+    const road = roads.find(r => r.name === loc);
+    if (!road) return "";
+    const lines = road.connectsVillages.map(vid => {
+      const v = villages.find(v => v.id === vid);
+      const vName = v?.name ?? vid;
+      const vSquare = v?.locations.find(l => l.endsWith("Village Square")) ?? v?.locations[0] ?? vid;
+      return `  Go to ${vName}: move_to "${vSquare}"`;
+    });
+    return `Travel options (pick a direction):\n${lines.join("\n")}`;
+  }
+
+  const currentVid = getVillageForLocation(loc) ?? getAgentVillage(agent);
+  const reachableRoads = roads.filter(r => r.connectsVillages.includes(currentVid));
+  if (reachableRoads.length === 0) return "";
+
+  const lines = reachableRoads.map(road => {
+    const destVid = road.connectsVillages.find(v => v !== currentVid) ?? "";
+    const destName = villages.find(v => v.id === destVid)?.name ?? destVid;
+    return `  Travel to ${destName}: move_to "${road.name}" (${road.transitTicks} tick travel, costs 1 hunger)`;
+  });
+  return `Travel:\n${lines.join("\n")}`;
+}
+
+// ─── Road perception (minimal — no marketplace, no production) ─
+
+function buildRoadPerception(
+  agent: AgentName,
+  state: WorldState,
+  time: SimTime,
+  otherAgentsPresent: string[],
+  pendingMessages: string,
+  conversationSoFar: string,
+): string {
+  const eco = state.economics[agent];
+  const body = state.body[agent];
+  const location = state.agent_locations[agent];
+  const feedback = (state.action_feedback[agent] ?? []).join("\n");
+  const bodyNote = bodyPerception(body);
+  const inventoryLines = buildInventoryLines(agent, state);
+
+  const road = getRoads().find(r => r.name === location);
+  const [v1id, v2id] = road?.connectsVillages ?? [];
+  const v1Name = getVillages().find(v => v.id === v1id)?.name ?? v1id ?? "?";
+  const v2Name = getVillages().find(v => v.id === v2id)?.name ?? v2id ?? "?";
+
+  const othersStr = otherAgentsPresent.length > 0
+    ? `Others on the road: ${otherAgentsPresent.join(", ")}.`
+    : "You are alone on the road.";
+
+  return `RULE: Speech NEVER moves goods or coin. Only post_order and buy_item create real transfers. Saying "here are 4 coins" does nothing.
+
+You are ${getDisplayName(agent)}.
+Location: ${location}. ${time.timeLabel}. ${time.season.charAt(0).toUpperCase() + time.season.slice(1)}, day ${time.seasonDay}/7.
+Weather: ${state.weather}
+
+You are travelling between ${v1Name} and ${v2Name}. You will arrive at your destination next tick.
+
+${othersStr}
+${bodyNote ? bodyNote + "\n" : ""}
+Inventory: ${inventoryLines}
+Wallet: ${eco.wallet} coin
+
+${pendingMessages ? `Messages:\n${pendingMessages}\n` : ""}${feedback ? `Last tick feedback:\n${feedback}\n` : ""}${conversationSoFar ? `\nConversation so far:\n${conversationSoFar}\n` : ""}`.trim();
+}
+
+// ─── Full perception ──────────────────────────────────────────
+
 export function buildPerception(
   agent: AgentName,
   state: WorldState,
@@ -248,6 +319,11 @@ export function buildPerception(
   const body = state.body[agent];
   const location = state.agent_locations[agent];
 
+  // Road agents get a stripped-down perception with no marketplace/production context
+  if (isRoadLocation(location)) {
+    return buildRoadPerception(agent, state, time, otherAgentsPresent, pendingMessages, conversationSoFar);
+  }
+
   const bodyNote = bodyPerception(body);
   const hungryHint = getHungryNoFoodHint(agent, state);
   const surplusHint = getSurplusFoodHint(agent, state);
@@ -258,7 +334,7 @@ export function buildPerception(
   const producibleBlock = getProducibleBlock(agent, state);
   const marketboardLines = buildMarketboardLines(agent, state);
 
-  const agentOrders = state.marketplace.orders.filter(o => o.agentId === agent);
+  const agentOrders = getAgentMarketplace(agent, state).orders.filter(o => o.agentId === agent);
   const activeOrdersBlock = agentOrders.length > 0
     ? `\nYour active orders:\n${agentOrders.map(o =>
         `${o.type.toUpperCase()} ${o.item} x${o.quantity} at ${o.price}c each (id: ${o.id}, expires in ${o.expiresAtTick - time.tick} ticks)`
@@ -274,13 +350,13 @@ export function buildPerception(
     : "";
 
   const hiredNote = eco.hiredBy
-    ? `\nYou are hired by ${AGENT_DISPLAY_NAMES[eco.hiredBy as AgentName]} today. Produce goods for them.`
+    ? `\nYou are hired by ${getDisplayName(eco.hiredBy)} today. Produce goods for them.`
     : "";
 
   const laborerNote = (() => {
-    for (const a of AGENT_NAMES) {
+    for (const a of getAgentNames()) {
       if (state.economics[a].hiredBy === agent) {
-        return `\n${AGENT_DISPLAY_NAMES[a]} is working for you today.`;
+        return `\n${getDisplayName(a)} is working for you today.`;
       }
     }
     return "";
@@ -303,7 +379,7 @@ export function buildPerception(
 
   return `RULE: Speech NEVER moves goods or coin. Only post_order and buy_item create real transfers. Saying "here are 4 coins" does nothing.
 
-You are ${AGENT_DISPLAY_NAMES[agent]}.
+You are ${getDisplayName(agent)}.
 Location: ${location}. ${time.timeLabel}. ${time.season.charAt(0).toUpperCase() + time.season.slice(1)}, day ${time.seasonDay}/7.
 Weather: ${state.weather}${activeEvents}${lawsBlock}${meetingCtx}${villageConcernsBlock}
 
@@ -338,7 +414,7 @@ export function buildMeetingPerception(
     ? `Present: ${othersPresent.join(", ")}.`
     : "You are alone here.";
 
-  const councilNote = COUNCIL_MEMBERS.includes(agent)
+  const councilNote = getCouncilMembers("brunnfeld").includes(agent)
     ? `\nYou hold a council seat. This meeting is part of your duties as a council member.`
     : "";
 
@@ -346,7 +422,7 @@ export function buildMeetingPerception(
     ? `\n=== VILLAGE MEETING — DISCUSSION ===\nAgenda: "${mtg.description}" (${mtg.agendaType.replace("_", " ")})\nSpeak your mind. If you have a concrete proposal, use propose_rule with a specific text (and value if it's numeric, e.g. tax rate 0.15). You can also just speak or think.`
     : `\n=== VILLAGE MEETING — VOTE ===\nProposal on the table: "${proposal ?? "(no specific rule proposed)"}"\nUse the vote action with side "agree" or "disagree". Speak first if you want.`;
 
-  return `You are ${AGENT_DISPLAY_NAMES[agent]}.
+  return `You are ${getDisplayName(agent)}.
 Location: Town Hall. ${time.timeLabel}. ${time.season.charAt(0).toUpperCase() + time.season.slice(1)}, day ${time.seasonDay}/7.
 Weather: ${state.weather}${lawsBlock}
 
@@ -358,23 +434,36 @@ ${feedback ? `Last tick feedback:\n${feedback}\n` : ""}${conversationSoFar ? `\n
 
 // ─── Prompt builder ───────────────────────────────────────────
 
-function buildPrompt(agent: AgentName, perception: string, actionSchema: string): string {
-  const name = AGENT_DISPLAY_NAMES[agent];
+function buildPrompt(agent: AgentName, perception: string, actionSchema: string, state: WorldState): string {
+  const name = getDisplayName(agent);
   const profile = readAgentProfile(agent);
   const memory = readAgentMemory(agent);
+
+  // Use current physical village, not home village
+  const currentLoc = state.agent_locations[agent];
+  const onRoad = isRoadLocation(currentLoc);
+  const currentVillageId = onRoad
+    ? getAgentVillage(agent)
+    : (getVillageForLocation(currentLoc) ?? getAgentVillage(agent));
+
+  const villageName = getVillages().find(v => v.id === currentVillageId)?.name ?? "";
+  const displayLocs = onRoad ? [] : getVillageLocations(currentVillageId).map(loc =>
+    villageName && loc.startsWith(`${villageName}:`) ? loc.slice(villageName.length + 1) : loc
+  );
+  const locationsLine = displayLocs.length > 0 ? `Locations in the village: ${displayLocs.join(", ")}` : "";
+
+  const travelBlock = buildTravelBlock(agent, state);
 
   return `You are ${name}.
 
 ${profile}
-
-Locations in the village: ${[...LOCATIONS].join(", ")}
-
+${locationsLine ? "\n" + locationsLine : ""}
 ${memory}
 
 ---
 
 ${perception}
-
+${travelBlock ? "\n" + travelBlock + "\n" : ""}
 ${actionSchema}`;
 }
 
@@ -388,8 +477,8 @@ export async function runAgentTurn(
   const model = process.env.CHARACTER_MODEL || "haiku";
   const hasConcerns = computeVillageConcerns(context.state, context.time.tick).length > 0;
   const atMeeting = context.agentLocation === "Town Hall" && !!context.state.pending_meeting;
-  const prompt = buildPrompt(agent, perception, buildActionSchema(agent, hasConcerns, atMeeting));
-  const name = AGENT_DISPLAY_NAMES[agent];
+  const prompt = buildPrompt(agent, perception, buildActionSchema(agent, hasConcerns, atMeeting), context.state);
+  const name = getDisplayName(agent);
 
   // Emit "agent is thinking" to frontend
   emitSSE("agent:thinking", { agent, name });
@@ -409,9 +498,19 @@ export async function runAgentTurn(
   }
   emitSSE("agent:stream", { agent, name, chunk: "" });  // signal stream done
 
+  const KNOWN_ACTION_TYPES = new Set([
+    "speak", "think", "wait", "move_to", "produce", "buy_item", "post_order",
+    "cancel_order", "give_item", "hire", "loan_request", "loan_repay",
+    "steal", "vote", "call_meeting", "petition_meeting", "dismiss", "craft",
+    "eat",
+  ]);
   const actions = (response.actions || []).map(action => {
-    // Fallback: if LLM omitted type but sent text, treat as a thought
-    const sanitized = action.type ? action : { ...action, type: "think" as const };
+    let sanitized = action;
+    if (!action.type) {
+      sanitized = { ...action, type: "think" as const };
+    } else if (!KNOWN_ACTION_TYPES.has(action.type)) {
+      sanitized = { type: "think" as const, text: action.text ?? String(action.type) };
+    }
     return resolveAction(sanitized, context);
   });
   if (actions.length === 0) actions.push(resolveAction({ type: "wait" }, context));
