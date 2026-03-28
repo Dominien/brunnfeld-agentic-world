@@ -254,7 +254,7 @@ export async function* runAgentHarness(config: HarnessConfig): AsyncGenerator<vo
     if (result.pendingMove) pendingMove = result.pendingMove;
 
     historyLines.push(`→ ${toolCall.tool}(${JSON.stringify(toolCall.args)})`);
-    historyLines.push(`← ${result.text.slice(0, 250)}`);
+    historyLines.push(`← ${result.text.slice(0, 500)}`);
     remaining--;
 
     if (result.isInteraction) {
