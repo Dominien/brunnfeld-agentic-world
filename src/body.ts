@@ -59,8 +59,13 @@ export function resolveEat(
 ): string {
   const eco = state.economics[agent];
   const available = getInventoryQty(eco.inventory, item);
+  const total = eco.inventory.items.find(i => i.type === item)?.quantity ?? 0;
+  const reserved = total - available;
 
   if (available < quantity) {
+    if (reserved > 0 && total >= quantity) {
+      return `[Can't eat] Your ${item} is reserved in a sell order (${reserved} reserved, ${available} free). Cancel the order first with cancel_order, then eat.`;
+    }
     return `[Can't eat] You only have ${available} ${item}.`;
   }
 
