@@ -121,8 +121,7 @@ export function resolveAction(
         return { ...action, result: msg, visible: false };
       }
       if (context.movedThisTick?.has(agent)) {
-        feedbackToAgent(agent, state, `[Can't move] Already moved this hour. One move per hour.`);
-        return { ...action, result: "", visible: false };
+        return { ...action, result: `[Can't move] Already moved this hour.`, visible: false };
       }
       const wasOnRoad = isRoadLocation(agentLocation);
       state.agent_locations[agent] = targetLoc;
@@ -196,9 +195,9 @@ export function resolveAction(
       return { ...action, result: obj.content || obj.label, visible: false };
     }
 
-    // produce passes through to dedicated resolver
+    // produce passes through to dedicated resolver — stamp location so tick-end resolution works even if agent moves after
     case "produce":
-      return { ...action, result: `${name} starts work on ${action.item ?? "goods"}. Output added at end of tick — do not post a sell order for it yet.`, visible: true };
+      return { ...action, location: agentLocation, result: `${name} starts work on ${action.item ?? "goods"}. Output added at end of tick — do not post a sell order for it yet.`, visible: true };
 
     case "post_order": {
       const side = action.side;

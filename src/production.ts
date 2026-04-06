@@ -89,12 +89,13 @@ export function resolveProduction(
         }
       }
 
-      const currentLocation = state.agent_locations[agent];
+      // Use location stamped at produce-time (survives if agent moved after producing)
+      const prodLocation = action.location ?? state.agent_locations[agent];
       const validLocations = MULTI_FARM_ITEMS[itemKey] ?? [recipe.location];
-      const currentLocType = getLocationType(currentLocation);
-      const atValidLocation = validLocations.includes(currentLocation) ||
-        (currentLocType != null &&
-         validLocations.some(vl => getLocationType(vl) === currentLocType));
+      const prodLocType = getLocationType(prodLocation);
+      const atValidLocation = validLocations.includes(prodLocation) ||
+        (prodLocType != null &&
+         validLocations.some(vl => getLocationType(vl) === prodLocType));
       if (!atValidLocation) {
         feedbackToAgent(agent, state, `[Can't do that] You must be at ${recipe.location} to produce ${itemKey}.`);
         continue;
